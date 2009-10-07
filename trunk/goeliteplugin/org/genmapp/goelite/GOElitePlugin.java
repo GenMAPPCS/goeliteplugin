@@ -13,6 +13,5 @@ public class GOElitePlugin extends CytoscapePlugin {
 	JMenu pluginMenu = Cytoscape.getDesktop().getCyMenus().getMenuBar().getMenu("Plugins");
 	pluginMenu.add(item);
     }
-
 }
 
