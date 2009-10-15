@@ -1,4 +1,4 @@
-package org.genmapp.goelite
+package org.genmapp.goelite;
 
 import javax.swing.*;
 
