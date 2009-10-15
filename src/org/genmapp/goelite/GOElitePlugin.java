@@ -3,7 +3,7 @@ package org.genmapp.goelite;
 import javax.swing.*;
 
 import cytoscape.Cytoscape;
-import cytoscape.plugin.CytoscapePlugin
+import cytoscape.plugin.CytoscapePlugin;
 
 public class GOElitePlugin extends CytoscapePlugin {
 
