@@ -110,5 +110,27 @@
    		<copy file="${build.dir}/${plugin.name}.jar" todir="../cytoscape2.6/plugins/core/"/>
   		<copy file="${build.dir}/${plugin.name}.jar" todir="/Applications/Cytoscape_v2.6.3/plugins"/>
 	</target>
+	
+	<!-- wsdl2java -->
+	   <property name="cxf.home" location ="/Applications/apache-cxf-2.2.4"/>
+
+	   <path id="cxf.classpath">
+	      <fileset dir="${cxf.home}/lib">
+	         <include name="*.jar"/>
+	      </fileset>
+	   </path>
+	      
+	   <target name="cxfWSDLToJava">
+	      <java classname="org.apache.cxf.tools.wsdlto.WSDLToJava" fork="true">
+	         <arg value="-client"/>
+	         <arg value="-d"/>
+	         <arg value="src"/>
+	         <arg value="GOEliteService.wsdl.xml"/>
+	         <classpath>
+	            <path refid="cxf.classpath"/>
+	         </classpath>
+	      </java>
+	   </target>
+
 
 </project>

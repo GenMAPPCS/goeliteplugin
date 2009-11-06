@@ -1,0 +1,596 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wsdl:definitions targetNamespace="http://nbcr.sdsc.edu/opal" xmlns:apachesoap="http://xml.apache.org/xml-soap" xmlns:impl="http://nbcr.sdsc.edu/opal" xmlns:intf="http://nbcr.sdsc.edu/opal" xmlns:tns1="http://nbcr.sdsc.edu/opal/types" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:wsdlsoap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+<!--WSDL created by Apache Axis version: 1.2.1
+Built on Jun 14, 2005 (09:15:57 EDT)-->
+ <wsdl:types>
+  <schema targetNamespace="http://nbcr.sdsc.edu/opal/types" xmlns="http://www.w3.org/2001/XMLSchema">
+   <complexType name="AppMetadataInputType">
+    <sequence/>
+   </complexType>
+   <element name="getAppMetadataInput" type="tns1:AppMetadataInputType"/>
+   <complexType name="FlagsType">
+    <sequence>
+     <element name="id" type="xsd:ID"/>
+     <element name="tag" type="xsd:string"/>
+     <element maxOccurs="1" minOccurs="0" name="default" nillable="true" type="xsd:boolean"/>
+     <element maxOccurs="1" minOccurs="0" name="textDesc" type="xsd:string"/>
+    </sequence>
+   </complexType>
+   <complexType name="FlagsArrayType">
+    <sequence>
+     <element maxOccurs="unbounded" minOccurs="0" name="flag" type="tns1:FlagsType"/>
+    </sequence>
+   </complexType>
+   <simpleType name="ParamType">
+    <restriction base="xsd:string">
+     <enumeration value="INT"/>
+     <enumeration value="BOOL"/>
+     <enumeration value="FLOAT"/>
+     <enumeration value="STRING"/>
+     <enumeration value="FILE"/>
+     <enumeration value="URL"/>
+    </restriction>
+   </simpleType>
+   <simpleType name="IOType">
+    <restriction base="xsd:string">
+     <enumeration value="INPUT"/>
+     <enumeration value="OUTPUT"/>
+     <enumeration value="INOUT"/>
+    </restriction>
+   </simpleType>
+   <complexType name="ParamsType">
+    <sequence>
+     <element name="id" type="xsd:ID"/>
+     <element maxOccurs="1" minOccurs="0" name="tag" type="xsd:string"/>
+     <element maxOccurs="1" minOccurs="0" name="default" nillable="true" type="xsd:string"/>
+     <element name="paramType" type="tns1:ParamType"/>
+     <element maxOccurs="1" minOccurs="0" name="ioType" type="tns1:IOType"/>
+     <element maxOccurs="1" minOccurs="0" name="required" type="xsd:boolean"/>
+     <element maxOccurs="unbounded" minOccurs="0" name="value" type="xsd:string"/>
+     <element maxOccurs="1" minOccurs="0" name="semanticType" type="xsd:string"/>
+     <element maxOccurs="1" minOccurs="0" name="textDesc" type="xsd:string"/>
+    </sequence>
+   </complexType>
+   <complexType name="ParamsArrayType">
+    <sequence>
+     <element maxOccurs="1" minOccurs="0" name="separator" type="xsd:string"/>
+     <element maxOccurs="unbounded" minOccurs="0" name="param" type="tns1:ParamsType"/>
+    </sequence>
+   </complexType>
+   <complexType name="ImplicitParamsType">
+    <sequence>
+     <element name="id" type="xsd:ID"/>
+     <element maxOccurs="1" minOccurs="0" name="name" type="xsd:string"/>
+     <element maxOccurs="1" minOccurs="0" name="extension" type="xsd:string"/>
+     <element name="ioType" type="tns1:IOType"/>
+     <element maxOccurs="1" minOccurs="0" name="required" type="xsd:boolean"/>
+     <element maxOccurs="1" minOccurs="0" name="semanticType" type="xsd:string"/>
+     <element maxOccurs="1" minOccurs="0" name="textDesc" type="xsd:string"/>
+     <element maxOccurs="1" minOccurs="0" name="min" type="xsd:int"/>
+     <element maxOccurs="1" minOccurs="0" name="max" type="xsd:int"/>
+    </sequence>
+   </complexType>
+   <complexType name="ImplicitParamsArrayType">
+    <sequence>
+     <element maxOccurs="unbounded" minOccurs="0" name="param" type="tns1:ImplicitParamsType"/>
+    </sequence>
+   </complexType>
+   <complexType name="GroupsType">
+    <sequence>
+     <element name="name" type="xsd:string"/>
+     <element name="elements" type="xsd:IDREFS"/>
+     <element maxOccurs="1" minOccurs="0" name="required" type="xsd:boolean"/>
+     <element maxOccurs="1" minOccurs="0" name="exclusive" type="xsd:boolean"/>
+     <element maxOccurs="1" minOccurs="0" name="semanticType" type="xsd:string"/>
+     <element maxOccurs="1" minOccurs="0" name="textDesc" type="xsd:string"/>
+    </sequence>
+   </complexType>
+   <complexType name="GroupsArrayType">
+    <sequence>
+     <element maxOccurs="unbounded" minOccurs="0" name="group" type="tns1:GroupsType"/>
+    </sequence>
+   </complexType>
+   <complexType name="ArgumentsType">
+    <sequence>
+     <element maxOccurs="1" minOccurs="0" name="flags" type="tns1:FlagsArrayType"/>
+     <element maxOccurs="1" minOccurs="0" name="taggedParams" type="tns1:ParamsArrayType"/>
+     <element maxOccurs="1" minOccurs="0" name="untaggedParams" type="tns1:ParamsArrayType"/>
+     <element maxOccurs="1" minOccurs="0" name="implicitParams" type="tns1:ImplicitParamsArrayType"/>
+     <element maxOccurs="1" minOccurs="0" name="groups" type="tns1:GroupsArrayType"/>
+    </sequence>
+   </complexType>
+   <complexType name="AppMetadataType">
+    <sequence>
+     <element name="usage" type="xsd:string"/>
+     <element maxOccurs="unbounded" minOccurs="0" name="info" type="xsd:string"/>
+     <element maxOccurs="1" minOccurs="0" name="types" type="tns1:ArgumentsType"/>
+    </sequence>
+    <attribute name="appName" type="xsd:string"/>
+   </complexType>
+   <element name="getAppMetadataOutput" type="tns1:AppMetadataType"/>
+   <complexType name="FaultType">
+    <sequence>
+     <element name="message" nillable="true" type="xsd:string"/>
+    </sequence>
+   </complexType>
+   <element name="opalFaultOutput" type="tns1:FaultType"/>
+   <complexType name="AppConfigInputType">
+    <sequence/>
+   </complexType>
+   <element name="getAppConfigInput" type="tns1:AppConfigInputType"/>
+   <complexType name="AppConfigType">
+    <sequence>
+     <element name="metadata" type="tns1:AppMetadataType"/>
+     <element name="binaryLocation" type="xsd:string"/>
+     <element maxOccurs="1" minOccurs="0" name="defaultArgs" type="xsd:string"/>
+     <element name="parallel" type="xsd:boolean"/>
+    </sequence>
+   </complexType>
+   <element name="getAppConfigOutput" type="tns1:AppConfigType"/>
+   <complexType name="InputFileType">
+    <sequence>
+     <element name="name" type="xsd:string"/>
+     <element name="contents" type="xsd:base64Binary"/>
+    </sequence>
+   </complexType>
+   <complexType name="JobInputType">
+    <sequence>
+     <element maxOccurs="1" minOccurs="0" name="argList" type="xsd:string"/>
+     <element maxOccurs="1" minOccurs="0" name="numProcs" type="xsd:int"/>
+     <element maxOccurs="unbounded" minOccurs="0" name="inputFile" type="tns1:InputFileType"/>
+    </sequence>
+   </complexType>
+   <element name="launchJobInput" type="tns1:JobInputType"/>
+   <complexType name="StatusOutputType">
+    <sequence>
+     <element name="code" type="xsd:int"/>
+     <element name="message" type="xsd:string"/>
+     <element name="baseURL" type="xsd:anyURI"/>
+    </sequence>
+   </complexType>
+   <complexType name="JobSubOutputType">
+    <sequence>
+     <element name="jobID" type="xsd:string"/>
+     <element name="status" type="tns1:StatusOutputType"/>
+    </sequence>
+   </complexType>
+   <element name="launchJobOutput" type="tns1:JobSubOutputType"/>
+   <element name="launchJobBlockingInput" type="tns1:JobInputType"/>
+   <complexType name="OutputFileType">
+    <sequence>
+     <element name="name" type="xsd:string"/>
+     <element name="url" type="xsd:anyURI"/>
+    </sequence>
+   </complexType>
+   <complexType name="JobOutputType">
+    <sequence>
+     <element maxOccurs="1" minOccurs="0" name="stdOut" type="xsd:anyURI"/>
+     <element maxOccurs="1" minOccurs="0" name="stdErr" type="xsd:anyURI"/>
+     <element maxOccurs="unbounded" minOccurs="0" name="outputFile" type="tns1:OutputFileType"/>
+    </sequence>
+   </complexType>
+   <complexType name="BlockingOutputType">
+    <sequence>
+     <element name="status" type="tns1:StatusOutputType"/>
+     <element name="jobOut" type="tns1:JobOutputType"/>
+    </sequence>
+   </complexType>
+   <element name="launchJobBlockingOutput" type="tns1:BlockingOutputType"/>
+   <element name="queryStatusInput" type="xsd:string"/>
+   <element name="queryStatusOutput" type="tns1:StatusOutputType"/>
+   <element name="getOutputsInput" type="xsd:string"/>
+   <element name="getOutputsOutput" type="tns1:JobOutputType"/>
+   <complexType name="OutputsByNameInputType">
+    <sequence>
+     <element name="jobID" type="xsd:string"/>
+     <element name="fileName" type="xsd:string"/>
+    </sequence>
+   </complexType>
+   <element name="getOutputAsBase64ByNameInput" type="tns1:OutputsByNameInputType"/>
+   <element name="getOutputAsBase64ByNameOutput">
+    <complexType>
+     <sequence>
+      <element maxOccurs="unbounded" minOccurs="0" name="item" type="xsd:byte"/>
+     </sequence>
+    </complexType>
+   </element>
+   <element name="destroyInput" type="xsd:string"/>
+   <element name="destroyOutput" type="tns1:StatusOutputType"/>
+  </schema>
+ </wsdl:types>
+
+   <wsdl:message name="getAppConfigRequest">
+
+      <wsdl:part element="tns1:getAppConfigInput" name="getAppConfigInput"/>
+
+   </wsdl:message>
+
+   <wsdl:message name="getOutputAsBase64ByNameRequest">
+
+      <wsdl:part element="tns1:getOutputAsBase64ByNameInput" name="getOutputAsBase64ByNameInput"/>
+
+   </wsdl:message>
+
+   <wsdl:message name="FaultType">
+
+      <wsdl:part element="tns1:opalFaultOutput" name="opalFaultOutput"/>
+
+   </wsdl:message>
+
+   <wsdl:message name="getOutputAsBase64ByNameResponse">
+
+      <wsdl:part element="tns1:getOutputAsBase64ByNameOutput" name="getOutputAsBase64ByNameOutput"/>
+
+   </wsdl:message>
+
+   <wsdl:message name="getAppConfigResponse">
+
+      <wsdl:part element="tns1:getAppConfigOutput" name="getAppConfigOutput"/>
+
+   </wsdl:message>
+
+   <wsdl:message name="getAppMetadataRequest">
+
+      <wsdl:part element="tns1:getAppMetadataInput" name="getAppMetadataInput"/>
+
+   </wsdl:message>
+
+   <wsdl:message name="launchJobResponse">
+
+      <wsdl:part element="tns1:launchJobOutput" name="launchJobOutput"/>
+
+   </wsdl:message>
+
+   <wsdl:message name="getAppMetadataResponse">
+
+      <wsdl:part element="tns1:getAppMetadataOutput" name="getAppMetadataOutput"/>
+
+   </wsdl:message>
+
+   <wsdl:message name="getOutputsResponse">
+
+      <wsdl:part element="tns1:getOutputsOutput" name="getOutputsOutput"/>
+
+   </wsdl:message>
+
+   <wsdl:message name="launchJobRequest">
+
+      <wsdl:part element="tns1:launchJobInput" name="launchJobInput"/>
+
+   </wsdl:message>
+
+   <wsdl:message name="destroyResponse">
+
+      <wsdl:part element="tns1:destroyOutput" name="destroyOutput"/>
+
+   </wsdl:message>
+
+   <wsdl:message name="launchJobBlockingResponse">
+
+      <wsdl:part element="tns1:launchJobBlockingOutput" name="launchJobBlockingOutput"/>
+
+   </wsdl:message>
+
+   <wsdl:message name="queryStatusResponse">
+
+      <wsdl:part element="tns1:queryStatusOutput" name="queryStatusOutput"/>
+
+   </wsdl:message>
+
+   <wsdl:message name="queryStatusRequest">
+
+      <wsdl:part element="tns1:queryStatusInput" name="queryStatusInput"/>
+
+   </wsdl:message>
+
+   <wsdl:message name="destroyRequest">
+
+      <wsdl:part element="tns1:destroyInput" name="destroyInput"/>
+
+   </wsdl:message>
+
+   <wsdl:message name="getOutputsRequest">
+
+      <wsdl:part element="tns1:getOutputsInput" name="getOutputsInput"/>
+
+   </wsdl:message>
+
+   <wsdl:message name="launchJobBlockingRequest">
+
+      <wsdl:part element="tns1:launchJobBlockingInput" name="launchJobBlockingInput"/>
+
+   </wsdl:message>
+
+   <wsdl:portType name="AppServicePortType">
+
+      <wsdl:operation name="getAppMetadata" parameterOrder="getAppMetadataInput">
+
+         <wsdl:input message="impl:getAppMetadataRequest" name="getAppMetadataRequest"/>
+
+         <wsdl:output message="impl:getAppMetadataResponse" name="getAppMetadataResponse"/>
+
+         <wsdl:fault message="impl:FaultType" name="FaultType"/>
+
+      </wsdl:operation>
+
+      <wsdl:operation name="getAppConfig" parameterOrder="getAppConfigInput">
+
+         <wsdl:input message="impl:getAppConfigRequest" name="getAppConfigRequest"/>
+
+         <wsdl:output message="impl:getAppConfigResponse" name="getAppConfigResponse"/>
+
+         <wsdl:fault message="impl:FaultType" name="FaultType"/>
+
+      </wsdl:operation>
+
+      <wsdl:operation name="launchJob" parameterOrder="launchJobInput">
+
+         <wsdl:input message="impl:launchJobRequest" name="launchJobRequest"/>
+
+         <wsdl:output message="impl:launchJobResponse" name="launchJobResponse"/>
+
+         <wsdl:fault message="impl:FaultType" name="FaultType"/>
+
+      </wsdl:operation>
+
+      <wsdl:operation name="launchJobBlocking" parameterOrder="launchJobBlockingInput">
+
+         <wsdl:input message="impl:launchJobBlockingRequest" name="launchJobBlockingRequest"/>
+
+         <wsdl:output message="impl:launchJobBlockingResponse" name="launchJobBlockingResponse"/>
+
+         <wsdl:fault message="impl:FaultType" name="FaultType"/>
+
+      </wsdl:operation>
+
+      <wsdl:operation name="queryStatus" parameterOrder="queryStatusInput">
+
+         <wsdl:input message="impl:queryStatusRequest" name="queryStatusRequest"/>
+
+         <wsdl:output message="impl:queryStatusResponse" name="queryStatusResponse"/>
+
+         <wsdl:fault message="impl:FaultType" name="FaultType"/>
+
+      </wsdl:operation>
+
+      <wsdl:operation name="getOutputs" parameterOrder="getOutputsInput">
+
+         <wsdl:input message="impl:getOutputsRequest" name="getOutputsRequest"/>
+
+         <wsdl:output message="impl:getOutputsResponse" name="getOutputsResponse"/>
+
+         <wsdl:fault message="impl:FaultType" name="FaultType"/>
+
+      </wsdl:operation>
+
+      <wsdl:operation name="getOutputAsBase64ByName" parameterOrder="getOutputAsBase64ByNameInput">
+
+         <wsdl:input message="impl:getOutputAsBase64ByNameRequest" name="getOutputAsBase64ByNameRequest"/>
+
+         <wsdl:output message="impl:getOutputAsBase64ByNameResponse" name="getOutputAsBase64ByNameResponse"/>
+
+         <wsdl:fault message="impl:FaultType" name="FaultType"/>
+
+      </wsdl:operation>
+
+      <wsdl:operation name="destroy" parameterOrder="destroyInput">
+
+         <wsdl:input message="impl:destroyRequest" name="destroyRequest"/>
+
+         <wsdl:output message="impl:destroyResponse" name="destroyResponse"/>
+
+         <wsdl:fault message="impl:FaultType" name="FaultType"/>
+
+      </wsdl:operation>
+
+   </wsdl:portType>
+
+   <wsdl:binding name="AppServicePortSoapBinding" type="impl:AppServicePortType">
+
+      <wsdlsoap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+
+      <wsdl:operation name="getAppMetadata">
+
+         <wsdlsoap:operation soapAction="http://nbcr.sdsc.edu/opal/getAppMetadata"/>
+
+         <wsdl:input name="getAppMetadataRequest">
+
+            <wsdlsoap:body use="literal"/>
+
+         </wsdl:input>
+
+         <wsdl:output name="getAppMetadataResponse">
+
+            <wsdlsoap:body use="literal"/>
+
+         </wsdl:output>
+
+         <wsdl:fault name="FaultType">
+
+            <wsdlsoap:fault name="FaultType" use="literal"/>
+
+         </wsdl:fault>
+
+      </wsdl:operation>
+
+      <wsdl:operation name="getAppConfig">
+
+         <wsdlsoap:operation soapAction="http://nbcr.sdsc.edu/opal/getAppConfig"/>
+
+         <wsdl:input name="getAppConfigRequest">
+
+            <wsdlsoap:body use="literal"/>
+
+         </wsdl:input>
+
+         <wsdl:output name="getAppConfigResponse">
+
+            <wsdlsoap:body use="literal"/>
+
+         </wsdl:output>
+
+         <wsdl:fault name="FaultType">
+
+            <wsdlsoap:fault name="FaultType" use="literal"/>
+
+         </wsdl:fault>
+
+      </wsdl:operation>
+
+      <wsdl:operation name="launchJob">
+
+         <wsdlsoap:operation soapAction="http://nbcr.sdsc.edu/opal/launchJob"/>
+
+         <wsdl:input name="launchJobRequest">
+
+            <wsdlsoap:body use="literal"/>
+
+         </wsdl:input>
+
+         <wsdl:output name="launchJobResponse">
+
+            <wsdlsoap:body use="literal"/>
+
+         </wsdl:output>
+
+         <wsdl:fault name="FaultType">
+
+            <wsdlsoap:fault name="FaultType" use="literal"/>
+
+         </wsdl:fault>
+
+      </wsdl:operation>
+
+      <wsdl:operation name="launchJobBlocking">
+
+         <wsdlsoap:operation soapAction="http://nbcr.sdsc.edu/opal/launchJobBlocking"/>
+
+         <wsdl:input name="launchJobBlockingRequest">
+
+            <wsdlsoap:body use="literal"/>
+
+         </wsdl:input>
+
+         <wsdl:output name="launchJobBlockingResponse">
+
+            <wsdlsoap:body use="literal"/>
+
+         </wsdl:output>
+
+         <wsdl:fault name="FaultType">
+
+            <wsdlsoap:fault name="FaultType" use="literal"/>
+
+         </wsdl:fault>
+
+      </wsdl:operation>
+
+      <wsdl:operation name="queryStatus">
+
+         <wsdlsoap:operation soapAction="http://nbcr.sdsc.edu/opal/queryStatus"/>
+
+         <wsdl:input name="queryStatusRequest">
+
+            <wsdlsoap:body use="literal"/>
+
+         </wsdl:input>
+
+         <wsdl:output name="queryStatusResponse">
+
+            <wsdlsoap:body use="literal"/>
+
+         </wsdl:output>
+
+         <wsdl:fault name="FaultType">
+
+            <wsdlsoap:fault name="FaultType" use="literal"/>
+
+         </wsdl:fault>
+
+      </wsdl:operation>
+
+      <wsdl:operation name="getOutputs">
+
+         <wsdlsoap:operation soapAction="http://nbcr.sdsc.edu/opal/getOutputs"/>
+
+         <wsdl:input name="getOutputsRequest">
+
+            <wsdlsoap:body use="literal"/>
+
+         </wsdl:input>
+
+         <wsdl:output name="getOutputsResponse">
+
+            <wsdlsoap:body use="literal"/>
+
+         </wsdl:output>
+
+         <wsdl:fault name="FaultType">
+
+            <wsdlsoap:fault name="FaultType" use="literal"/>
+
+         </wsdl:fault>
+
+      </wsdl:operation>
+
+      <wsdl:operation name="getOutputAsBase64ByName">
+
+         <wsdlsoap:operation soapAction="http://nbcr.sdsc.edu/opal/getOutputAsBase64ByName"/>
+
+         <wsdl:input name="getOutputAsBase64ByNameRequest">
+
+            <wsdlsoap:body use="literal"/>
+
+         </wsdl:input>
+
+         <wsdl:output name="getOutputAsBase64ByNameResponse">
+
+            <wsdlsoap:body use="literal"/>
+
+         </wsdl:output>
+
+         <wsdl:fault name="FaultType">
+
+            <wsdlsoap:fault name="FaultType" use="literal"/>
+
+         </wsdl:fault>
+
+      </wsdl:operation>
+
+      <wsdl:operation name="destroy">
+
+         <wsdlsoap:operation soapAction="http://nbcr.sdsc.edu/opal/destroy"/>
+
+         <wsdl:input name="destroyRequest">
+
+            <wsdlsoap:body use="literal"/>
+
+         </wsdl:input>
+
+         <wsdl:output name="destroyResponse">
+
+            <wsdlsoap:body use="literal"/>
+
+         </wsdl:output>
+
+         <wsdl:fault name="FaultType">
+
+            <wsdlsoap:fault name="FaultType" use="literal"/>
+
+         </wsdl:fault>
+
+      </wsdl:operation>
+
+   </wsdl:binding>
+
+   <wsdl:service name="AppService">
+
+      <wsdl:port binding="impl:AppServicePortSoapBinding" name="AppServicePort">
+
+         <wsdlsoap:address location="http://webservices.rbvi.ucsf.edu/opal/services/GOEliteService"/>
+
+      </wsdl:port>
+
+   </wsdl:service>
+
+</wsdl:definitions>
