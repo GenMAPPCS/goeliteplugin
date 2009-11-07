@@ -3,11 +3,13 @@ package org.genmapp.goelite;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
-import javax.swing.*;
-
-import BooleanMapper.BooleanMapperCommandListener;
+import javax.swing.JDialog;
+import javax.swing.JMenu;
+import javax.swing.JMenuItem;
+import javax.swing.JPanel;
 
 import cytoscape.Cytoscape;
+import cytoscape.data.webservice.WebServiceClientManager;
 import cytoscape.layout.LayoutProperties;
 import cytoscape.layout.Tunable;
 import cytoscape.plugin.CytoscapePlugin;
@@ -34,9 +36,11 @@ public class GOElitePlugin extends CytoscapePlugin
     { 
 	  JMenuItem item = new JMenuItem("Run GO-Elite");
 	  JMenu pluginMenu = Cytoscape.getDesktop().getCyMenus().getMenuBar().getMenu("Plugins");
-	  item.addActionListener(new GOElitePluginCommandListener());
+	  item.addActionListener(new GoElitePluginCommandListener());
 
 	  pluginMenu.add(item);
+	  
+	  WebServiceClientManager.registerClient(GOEliteClient.getClient());
     }
 
 	class GoElitePluginCommandListener implements ActionListener {
@@ -47,7 +51,7 @@ public class GOElitePlugin extends CytoscapePlugin
 		public void actionPerformed(ActionEvent e) 
 		{
 		  // Create the dialog
-		  
+			
 		  String vSpecies[] = { new String( "Mm" ), new String( "Hs" ) };
 		  String vGeneSystems[] = { new String( "Ensembl" ), new String( "EntrezGene" ) };
 		  String vPruningAlgorithms[] = { new String( "z-score" ), new String( "gene number" ), 
