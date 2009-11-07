@@ -42,17 +42,18 @@ implements NetworkImportWebServiceClient {
 	 */
 	public GOEliteClient()  throws CyWebServiceException {
 		super(CLIENT_ID, DISPLAY_NAME,
-			      new ClientType[] { ClientType.ANALYSIS }, null, null, null);
+			      new ClientType[] { ClientType.NETWORK }, null, null, null);
 		
 		setDescription();
 		setProperty();
+		
 	}
 
 	/**
 	 * 
 	 */
 	private void setDescription() {
-		description = "http://www.ebi.ac.uk/intact/site/contents/all_printerfriendly.jsf";
+		description = "http://webservices.rbvi.ucsf.edu/opal/CreateSubmissionForm.do?serviceURL=http%3A%2F%2Flocalhost%3A8080%2Fopal%2Fservices%2FGOEliteService";
 	}
 	
 	/**
@@ -67,8 +68,6 @@ implements NetworkImportWebServiceClient {
 
 		props = new ModulePropertiesImpl(clientID, "wsc");
 
-		props.add( new Tunable("group", "group",
-	    		Tunable.GROUP, new Integer( 10 ) ) );
 	    props.add(new Tunable("num_cpus", "Number of CPUs",
 	            Tunable.INTEGER, new Integer( 1 ) ) );
 
