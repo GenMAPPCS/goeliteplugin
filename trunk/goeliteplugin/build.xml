@@ -16,7 +16,7 @@
 	
 	<property name="release.dir" value="../cytoscape2.6"/>
 
-	<property name="lib.dir" value = "../cytoscape2.6/lib"/>
+	<property name="lib.dir" value = "../cytoscape2.6/lib"/> 
 	
   	<!-- Temporary build directories -->
 
@@ -24,11 +24,8 @@
   	<property name="build.classes" value="${build.dir}/classes"/>
 
 	<property name="doc.dir" value="doc"/> 
-	<property name="pluginlib.dir" value="lib"/>
+	<!-- <property name="pluginlib.dir" value="lib"/> -->
 	<property name="plugindata.dir" value="data"/>
-	
-	<property name="pathvisio.dir" value="${pluginlib.dir}/pathvisio"/>
-	<property name="pathvisio.class.dir" value="${build.classes}.pathvisio"/>
 	
 	<!-- Global "magic" property for <javac> -->
 	<property name="build.compiler" value="modern"/>
@@ -45,13 +42,11 @@
 			<include name="*.jar"/>
 		</fileset>
 		
+		<!-- 
 		<fileset dir="${pluginlib.dir}">
 			<include name="*.jar"/>
 		</fileset>
-
-		<fileset dir="${pathvisio.dir}">
-			<include name="*.jar"/>
-		</fileset>
+		-->
 
 	</path>
 
@@ -97,9 +92,11 @@
 	<!--  Create PlugIn Jar File (Unobfuscated) -->
    	<target name="jar" depends="compile" description="Creates PlugIn Jar File.">
 
+   		<!-- 
         <unjar dest="${build.classes}">
          <fileset dir="${pluginlib.dir}"/>
         </unjar>
+        -->
 
       <jar destfile="${build.dir}/${plugin.name}.jar">
         <fileset dir="${build.classes}"/>
