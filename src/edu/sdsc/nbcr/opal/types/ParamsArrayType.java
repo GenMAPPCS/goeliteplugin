@@ -1,94 +1,174 @@
+/**
+ * ParamsArrayType.java
+ *
+ * This file was auto-generated from WSDL
+ * by the Apache Axis 1.4 Apr 22, 2006 (06:55:48 PDT) WSDL2Java emitter.
+ */
 
 package edu.sdsc.nbcr.opal.types;
 
-import java.util.ArrayList;
-import java.util.List;
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlType;
+public class ParamsArrayType  implements java.io.Serializable {
+    private java.lang.String separator;
 
+    private edu.sdsc.nbcr.opal.types.ParamsType[] param;
 
-/**
- * <p>Java class for ParamsArrayType complex type.
- * 
- * <p>The following schema fragment specifies the expected content contained within this class.
- * 
- * <pre>
- * &lt;complexType name="ParamsArrayType">
- *   &lt;complexContent>
- *     &lt;restriction base="{http://www.w3.org/2001/XMLSchema}anyType">
- *       &lt;sequence>
- *         &lt;element name="separator" type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/>
- *         &lt;element name="param" type="{http://nbcr.sdsc.edu/opal/types}ParamsType" maxOccurs="unbounded" minOccurs="0"/>
- *       &lt;/sequence>
- *     &lt;/restriction>
- *   &lt;/complexContent>
- * &lt;/complexType>
- * </pre>
- * 
- * 
- */
-@XmlAccessorType(XmlAccessType.FIELD)
-@XmlType(name = "ParamsArrayType", propOrder = {
-    "separator",
-    "param"
-})
-public class ParamsArrayType {
+    public ParamsArrayType() {
+    }
 
-    protected String separator;
-    protected List<ParamsType> param;
+    public ParamsArrayType(
+           java.lang.String separator,
+           edu.sdsc.nbcr.opal.types.ParamsType[] param) {
+           this.separator = separator;
+           this.param = param;
+    }
+
 
     /**
-     * Gets the value of the separator property.
+     * Gets the separator value for this ParamsArrayType.
      * 
-     * @return
-     *     possible object is
-     *     {@link String }
-     *     
+     * @return separator
      */
-    public String getSeparator() {
+    public java.lang.String getSeparator() {
         return separator;
     }
 
+
     /**
-     * Sets the value of the separator property.
+     * Sets the separator value for this ParamsArrayType.
      * 
-     * @param value
-     *     allowed object is
-     *     {@link String }
-     *     
+     * @param separator
      */
-    public void setSeparator(String value) {
-        this.separator = value;
+    public void setSeparator(java.lang.String separator) {
+        this.separator = separator;
+    }
+
+
+    /**
+     * Gets the param value for this ParamsArrayType.
+     * 
+     * @return param
+     */
+    public edu.sdsc.nbcr.opal.types.ParamsType[] getParam() {
+        return param;
+    }
+
+
+    /**
+     * Sets the param value for this ParamsArrayType.
+     * 
+     * @param param
+     */
+    public void setParam(edu.sdsc.nbcr.opal.types.ParamsType[] param) {
+        this.param = param;
+    }
+
+    public edu.sdsc.nbcr.opal.types.ParamsType getParam(int i) {
+        return this.param[i];
+    }
+
+    public void setParam(int i, edu.sdsc.nbcr.opal.types.ParamsType _value) {
+        this.param[i] = _value;
+    }
+
+    private java.lang.Object __equalsCalc = null;
+    public synchronized boolean equals(java.lang.Object obj) {
+        if (!(obj instanceof ParamsArrayType)) return false;
+        ParamsArrayType other = (ParamsArrayType) obj;
+        if (obj == null) return false;
+        if (this == obj) return true;
+        if (__equalsCalc != null) {
+            return (__equalsCalc == obj);
+        }
+        __equalsCalc = obj;
+        boolean _equals;
+        _equals = true && 
+            ((this.separator==null && other.getSeparator()==null) || 
+             (this.separator!=null &&
+              this.separator.equals(other.getSeparator()))) &&
+            ((this.param==null && other.getParam()==null) || 
+             (this.param!=null &&
+              java.util.Arrays.equals(this.param, other.getParam())));
+        __equalsCalc = null;
+        return _equals;
+    }
+
+    private boolean __hashCodeCalc = false;
+    public synchronized int hashCode() {
+        if (__hashCodeCalc) {
+            return 0;
+        }
+        __hashCodeCalc = true;
+        int _hashCode = 1;
+        if (getSeparator() != null) {
+            _hashCode += getSeparator().hashCode();
+        }
+        if (getParam() != null) {
+            for (int i=0;
+                 i<java.lang.reflect.Array.getLength(getParam());
+                 i++) {
+                java.lang.Object obj = java.lang.reflect.Array.get(getParam(), i);
+                if (obj != null &&
+                    !obj.getClass().isArray()) {
+                    _hashCode += obj.hashCode();
+                }
+            }
+        }
+        __hashCodeCalc = false;
+        return _hashCode;
+    }
+
+    // Type metadata
+    private static org.apache.axis.description.TypeDesc typeDesc =
+        new org.apache.axis.description.TypeDesc(ParamsArrayType.class, true);
+
+    static {
+        typeDesc.setXmlType(new javax.xml.namespace.QName("http://nbcr.sdsc.edu/opal/types", "ParamsArrayType"));
+        org.apache.axis.description.ElementDesc elemField = new org.apache.axis.description.ElementDesc();
+        elemField.setFieldName("separator");
+        elemField.setXmlName(new javax.xml.namespace.QName("", "separator"));
+        elemField.setXmlType(new javax.xml.namespace.QName("http://www.w3.org/2001/XMLSchema", "string"));
+        elemField.setMinOccurs(0);
+        elemField.setNillable(false);
+        typeDesc.addFieldDesc(elemField);
+        elemField = new org.apache.axis.description.ElementDesc();
+        elemField.setFieldName("param");
+        elemField.setXmlName(new javax.xml.namespace.QName("", "param"));
+        elemField.setXmlType(new javax.xml.namespace.QName("http://nbcr.sdsc.edu/opal/types", "ParamsType"));
+        elemField.setMinOccurs(0);
+        elemField.setNillable(false);
+        elemField.setMaxOccursUnbounded(true);
+        typeDesc.addFieldDesc(elemField);
     }
 
     /**
-     * Gets the value of the param property.
-     * 
-     * <p>
-     * This accessor method returns a reference to the live list,
-     * not a snapshot. Therefore any modification you make to the
-     * returned list will be present inside the JAXB object.
-     * This is why there is not a <CODE>set</CODE> method for the param property.
-     * 
-     * <p>
-     * For example, to add a new item, do as follows:
-     * <pre>
-     *    getParam().add(newItem);
-     * </pre>
-     * 
-     * 
-     * <p>
-     * Objects of the following type(s) are allowed in the list
-     * {@link ParamsType }
-     * 
-     * 
+     * Return type metadata object
      */
-    public List<ParamsType> getParam() {
-        if (param == null) {
-            param = new ArrayList<ParamsType>();
-        }
-        return this.param;
+    public static org.apache.axis.description.TypeDesc getTypeDesc() {
+        return typeDesc;
+    }
+
+    /**
+     * Get Custom Serializer
+     */
+    public static org.apache.axis.encoding.Serializer getSerializer(
+           java.lang.String mechType, 
+           java.lang.Class _javaType,  
+           javax.xml.namespace.QName _xmlType) {
+        return 
+          new  org.apache.axis.encoding.ser.BeanSerializer(
+            _javaType, _xmlType, typeDesc);
+    }
+
+    /**
+     * Get Custom Deserializer
+     */
+    public static org.apache.axis.encoding.Deserializer getDeserializer(
+           java.lang.String mechType, 
+           java.lang.Class _javaType,  
+           javax.xml.namespace.QName _xmlType) {
+        return 
+          new  org.apache.axis.encoding.ser.BeanDeserializer(
+            _javaType, _xmlType, typeDesc);
     }
 
 }

@@ -1,211 +1,303 @@
+/**
+ * GroupsType.java
+ *
+ * This file was auto-generated from WSDL
+ * by the Apache Axis 1.4 Apr 22, 2006 (06:55:48 PDT) WSDL2Java emitter.
+ */
 
 package edu.sdsc.nbcr.opal.types;
 
-import java.util.ArrayList;
-import java.util.List;
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlIDREF;
-import javax.xml.bind.annotation.XmlList;
-import javax.xml.bind.annotation.XmlSchemaType;
-import javax.xml.bind.annotation.XmlType;
+public class GroupsType  implements java.io.Serializable {
+    private java.lang.String name;
 
+    private org.apache.axis.types.IDRefs elements;
 
-/**
- * <p>Java class for GroupsType complex type.
- * 
- * <p>The following schema fragment specifies the expected content contained within this class.
- * 
- * <pre>
- * &lt;complexType name="GroupsType">
- *   &lt;complexContent>
- *     &lt;restriction base="{http://www.w3.org/2001/XMLSchema}anyType">
- *       &lt;sequence>
- *         &lt;element name="name" type="{http://www.w3.org/2001/XMLSchema}string"/>
- *         &lt;element name="elements" type="{http://www.w3.org/2001/XMLSchema}IDREFS"/>
- *         &lt;element name="required" type="{http://www.w3.org/2001/XMLSchema}boolean" minOccurs="0"/>
- *         &lt;element name="exclusive" type="{http://www.w3.org/2001/XMLSchema}boolean" minOccurs="0"/>
- *         &lt;element name="semanticType" type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/>
- *         &lt;element name="textDesc" type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/>
- *       &lt;/sequence>
- *     &lt;/restriction>
- *   &lt;/complexContent>
- * &lt;/complexType>
- * </pre>
- * 
- * 
- */
-@XmlAccessorType(XmlAccessType.FIELD)
-@XmlType(name = "GroupsType", propOrder = {
-    "name",
-    "elements",
-    "required",
-    "exclusive",
-    "semanticType",
-    "textDesc"
-})
-public class GroupsType {
+    private java.lang.Boolean required;
 
-    @XmlElement(required = true)
-    protected String name;
-    @XmlList
-    @XmlElement(required = true)
-    @XmlIDREF
-    @XmlSchemaType(name = "IDREFS")
-    protected List<Object> elements;
-    protected Boolean required;
-    protected Boolean exclusive;
-    protected String semanticType;
-    protected String textDesc;
+    private java.lang.Boolean exclusive;
+
+    private java.lang.String semanticType;
+
+    private java.lang.String textDesc;
+
+    public GroupsType() {
+    }
+
+    public GroupsType(
+           java.lang.String name,
+           org.apache.axis.types.IDRefs elements,
+           java.lang.Boolean required,
+           java.lang.Boolean exclusive,
+           java.lang.String semanticType,
+           java.lang.String textDesc) {
+           this.name = name;
+           this.elements = elements;
+           this.required = required;
+           this.exclusive = exclusive;
+           this.semanticType = semanticType;
+           this.textDesc = textDesc;
+    }
+
 
     /**
-     * Gets the value of the name property.
+     * Gets the name value for this GroupsType.
      * 
-     * @return
-     *     possible object is
-     *     {@link String }
-     *     
+     * @return name
      */
-    public String getName() {
+    public java.lang.String getName() {
         return name;
     }
 
-    /**
-     * Sets the value of the name property.
-     * 
-     * @param value
-     *     allowed object is
-     *     {@link String }
-     *     
-     */
-    public void setName(String value) {
-        this.name = value;
-    }
 
     /**
-     * Gets the value of the elements property.
+     * Sets the name value for this GroupsType.
      * 
-     * <p>
-     * This accessor method returns a reference to the live list,
-     * not a snapshot. Therefore any modification you make to the
-     * returned list will be present inside the JAXB object.
-     * This is why there is not a <CODE>set</CODE> method for the elements property.
-     * 
-     * <p>
-     * For example, to add a new item, do as follows:
-     * <pre>
-     *    getElements().add(newItem);
-     * </pre>
-     * 
-     * 
-     * <p>
-     * Objects of the following type(s) are allowed in the list
-     * {@link Object }
-     * 
-     * 
+     * @param name
      */
-    public List<Object> getElements() {
-        if (elements == null) {
-            elements = new ArrayList<Object>();
-        }
-        return this.elements;
+    public void setName(java.lang.String name) {
+        this.name = name;
     }
 
+
     /**
-     * Gets the value of the required property.
+     * Gets the elements value for this GroupsType.
      * 
-     * @return
-     *     possible object is
-     *     {@link Boolean }
-     *     
+     * @return elements
      */
-    public Boolean isRequired() {
+    public org.apache.axis.types.IDRefs getElements() {
+        return elements;
+    }
+
+
+    /**
+     * Sets the elements value for this GroupsType.
+     * 
+     * @param elements
+     */
+    public void setElements(org.apache.axis.types.IDRefs elements) {
+        this.elements = elements;
+    }
+
+
+    /**
+     * Gets the required value for this GroupsType.
+     * 
+     * @return required
+     */
+    public java.lang.Boolean getRequired() {
         return required;
     }
 
-    /**
-     * Sets the value of the required property.
-     * 
-     * @param value
-     *     allowed object is
-     *     {@link Boolean }
-     *     
-     */
-    public void setRequired(Boolean value) {
-        this.required = value;
-    }
 
     /**
-     * Gets the value of the exclusive property.
+     * Sets the required value for this GroupsType.
      * 
-     * @return
-     *     possible object is
-     *     {@link Boolean }
-     *     
+     * @param required
      */
-    public Boolean isExclusive() {
+    public void setRequired(java.lang.Boolean required) {
+        this.required = required;
+    }
+
+
+    /**
+     * Gets the exclusive value for this GroupsType.
+     * 
+     * @return exclusive
+     */
+    public java.lang.Boolean getExclusive() {
         return exclusive;
     }
 
-    /**
-     * Sets the value of the exclusive property.
-     * 
-     * @param value
-     *     allowed object is
-     *     {@link Boolean }
-     *     
-     */
-    public void setExclusive(Boolean value) {
-        this.exclusive = value;
-    }
 
     /**
-     * Gets the value of the semanticType property.
+     * Sets the exclusive value for this GroupsType.
      * 
-     * @return
-     *     possible object is
-     *     {@link String }
-     *     
+     * @param exclusive
      */
-    public String getSemanticType() {
+    public void setExclusive(java.lang.Boolean exclusive) {
+        this.exclusive = exclusive;
+    }
+
+
+    /**
+     * Gets the semanticType value for this GroupsType.
+     * 
+     * @return semanticType
+     */
+    public java.lang.String getSemanticType() {
         return semanticType;
     }
 
-    /**
-     * Sets the value of the semanticType property.
-     * 
-     * @param value
-     *     allowed object is
-     *     {@link String }
-     *     
-     */
-    public void setSemanticType(String value) {
-        this.semanticType = value;
-    }
 
     /**
-     * Gets the value of the textDesc property.
+     * Sets the semanticType value for this GroupsType.
      * 
-     * @return
-     *     possible object is
-     *     {@link String }
-     *     
+     * @param semanticType
      */
-    public String getTextDesc() {
+    public void setSemanticType(java.lang.String semanticType) {
+        this.semanticType = semanticType;
+    }
+
+
+    /**
+     * Gets the textDesc value for this GroupsType.
+     * 
+     * @return textDesc
+     */
+    public java.lang.String getTextDesc() {
         return textDesc;
     }
 
+
     /**
-     * Sets the value of the textDesc property.
+     * Sets the textDesc value for this GroupsType.
      * 
-     * @param value
-     *     allowed object is
-     *     {@link String }
-     *     
+     * @param textDesc
      */
-    public void setTextDesc(String value) {
-        this.textDesc = value;
+    public void setTextDesc(java.lang.String textDesc) {
+        this.textDesc = textDesc;
+    }
+
+    private java.lang.Object __equalsCalc = null;
+    public synchronized boolean equals(java.lang.Object obj) {
+        if (!(obj instanceof GroupsType)) return false;
+        GroupsType other = (GroupsType) obj;
+        if (obj == null) return false;
+        if (this == obj) return true;
+        if (__equalsCalc != null) {
+            return (__equalsCalc == obj);
+        }
+        __equalsCalc = obj;
+        boolean _equals;
+        _equals = true && 
+            ((this.name==null && other.getName()==null) || 
+             (this.name!=null &&
+              this.name.equals(other.getName()))) &&
+            ((this.elements==null && other.getElements()==null) || 
+             (this.elements!=null &&
+              this.elements.equals(other.getElements()))) &&
+            ((this.required==null && other.getRequired()==null) || 
+             (this.required!=null &&
+              this.required.equals(other.getRequired()))) &&
+            ((this.exclusive==null && other.getExclusive()==null) || 
+             (this.exclusive!=null &&
+              this.exclusive.equals(other.getExclusive()))) &&
+            ((this.semanticType==null && other.getSemanticType()==null) || 
+             (this.semanticType!=null &&
+              this.semanticType.equals(other.getSemanticType()))) &&
+            ((this.textDesc==null && other.getTextDesc()==null) || 
+             (this.textDesc!=null &&
+              this.textDesc.equals(other.getTextDesc())));
+        __equalsCalc = null;
+        return _equals;
+    }
+
+    private boolean __hashCodeCalc = false;
+    public synchronized int hashCode() {
+        if (__hashCodeCalc) {
+            return 0;
+        }
+        __hashCodeCalc = true;
+        int _hashCode = 1;
+        if (getName() != null) {
+            _hashCode += getName().hashCode();
+        }
+        if (getElements() != null) {
+            _hashCode += getElements().hashCode();
+        }
+        if (getRequired() != null) {
+            _hashCode += getRequired().hashCode();
+        }
+        if (getExclusive() != null) {
+            _hashCode += getExclusive().hashCode();
+        }
+        if (getSemanticType() != null) {
+            _hashCode += getSemanticType().hashCode();
+        }
+        if (getTextDesc() != null) {
+            _hashCode += getTextDesc().hashCode();
+        }
+        __hashCodeCalc = false;
+        return _hashCode;
+    }
+
+    // Type metadata
+    private static org.apache.axis.description.TypeDesc typeDesc =
+        new org.apache.axis.description.TypeDesc(GroupsType.class, true);
+
+    static {
+        typeDesc.setXmlType(new javax.xml.namespace.QName("http://nbcr.sdsc.edu/opal/types", "GroupsType"));
+        org.apache.axis.description.ElementDesc elemField = new org.apache.axis.description.ElementDesc();
+        elemField.setFieldName("name");
+        elemField.setXmlName(new javax.xml.namespace.QName("", "name"));
+        elemField.setXmlType(new javax.xml.namespace.QName("http://www.w3.org/2001/XMLSchema", "string"));
+        elemField.setNillable(false);
+        typeDesc.addFieldDesc(elemField);
+        elemField = new org.apache.axis.description.ElementDesc();
+        elemField.setFieldName("elements");
+        elemField.setXmlName(new javax.xml.namespace.QName("", "elements"));
+        elemField.setXmlType(new javax.xml.namespace.QName("http://www.w3.org/2001/XMLSchema", "IDREFS"));
+        elemField.setNillable(false);
+        typeDesc.addFieldDesc(elemField);
+        elemField = new org.apache.axis.description.ElementDesc();
+        elemField.setFieldName("required");
+        elemField.setXmlName(new javax.xml.namespace.QName("", "required"));
+        elemField.setXmlType(new javax.xml.namespace.QName("http://www.w3.org/2001/XMLSchema", "boolean"));
+        elemField.setMinOccurs(0);
+        elemField.setNillable(false);
+        typeDesc.addFieldDesc(elemField);
+        elemField = new org.apache.axis.description.ElementDesc();
+        elemField.setFieldName("exclusive");
+        elemField.setXmlName(new javax.xml.namespace.QName("", "exclusive"));
+        elemField.setXmlType(new javax.xml.namespace.QName("http://www.w3.org/2001/XMLSchema", "boolean"));
+        elemField.setMinOccurs(0);
+        elemField.setNillable(false);
+        typeDesc.addFieldDesc(elemField);
+        elemField = new org.apache.axis.description.ElementDesc();
+        elemField.setFieldName("semanticType");
+        elemField.setXmlName(new javax.xml.namespace.QName("", "semanticType"));
+        elemField.setXmlType(new javax.xml.namespace.QName("http://www.w3.org/2001/XMLSchema", "string"));
+        elemField.setMinOccurs(0);
+        elemField.setNillable(false);
+        typeDesc.addFieldDesc(elemField);
+        elemField = new org.apache.axis.description.ElementDesc();
+        elemField.setFieldName("textDesc");
+        elemField.setXmlName(new javax.xml.namespace.QName("", "textDesc"));
+        elemField.setXmlType(new javax.xml.namespace.QName("http://www.w3.org/2001/XMLSchema", "string"));
+        elemField.setMinOccurs(0);
+        elemField.setNillable(false);
+        typeDesc.addFieldDesc(elemField);
+    }
+
+    /**
+     * Return type metadata object
+     */
+    public static org.apache.axis.description.TypeDesc getTypeDesc() {
+        return typeDesc;
+    }
+
+    /**
+     * Get Custom Serializer
+     */
+    public static org.apache.axis.encoding.Serializer getSerializer(
+           java.lang.String mechType, 
+           java.lang.Class _javaType,  
+           javax.xml.namespace.QName _xmlType) {
+        return 
+          new  org.apache.axis.encoding.ser.BeanSerializer(
+            _javaType, _xmlType, typeDesc);
+    }
+
+    /**
+     * Get Custom Deserializer
+     */
+    public static org.apache.axis.encoding.Deserializer getDeserializer(
+           java.lang.String mechType, 
+           java.lang.Class _javaType,  
+           javax.xml.namespace.QName _xmlType) {
+        return 
+          new  org.apache.axis.encoding.ser.BeanDeserializer(
+            _javaType, _xmlType, typeDesc);
     }
 
 }

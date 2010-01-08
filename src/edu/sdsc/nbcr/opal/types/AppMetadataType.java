@@ -1,151 +1,245 @@
+/**
+ * AppMetadataType.java
+ *
+ * This file was auto-generated from WSDL
+ * by the Apache Axis 1.4 Apr 22, 2006 (06:55:48 PDT) WSDL2Java emitter.
+ */
 
 package edu.sdsc.nbcr.opal.types;
 
-import java.util.ArrayList;
-import java.util.List;
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlAttribute;
-import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlType;
+public class AppMetadataType  implements java.io.Serializable {
+    private java.lang.String usage;
 
+    private java.lang.String[] info;
 
-/**
- * <p>Java class for AppMetadataType complex type.
- * 
- * <p>The following schema fragment specifies the expected content contained within this class.
- * 
- * <pre>
- * &lt;complexType name="AppMetadataType">
- *   &lt;complexContent>
- *     &lt;restriction base="{http://www.w3.org/2001/XMLSchema}anyType">
- *       &lt;sequence>
- *         &lt;element name="usage" type="{http://www.w3.org/2001/XMLSchema}string"/>
- *         &lt;element name="info" type="{http://www.w3.org/2001/XMLSchema}string" maxOccurs="unbounded" minOccurs="0"/>
- *         &lt;element name="types" type="{http://nbcr.sdsc.edu/opal/types}ArgumentsType" minOccurs="0"/>
- *       &lt;/sequence>
- *       &lt;attribute name="appName" type="{http://www.w3.org/2001/XMLSchema}string" />
- *     &lt;/restriction>
- *   &lt;/complexContent>
- * &lt;/complexType>
- * </pre>
- * 
- * 
- */
-@XmlAccessorType(XmlAccessType.FIELD)
-@XmlType(name = "AppMetadataType", propOrder = {
-    "usage",
-    "info",
-    "types"
-})
-public class AppMetadataType {
+    private edu.sdsc.nbcr.opal.types.ArgumentsType types;
 
-    @XmlElement(required = true)
-    protected String usage;
-    protected List<String> info;
-    protected ArgumentsType types;
-    @XmlAttribute
-    protected String appName;
+    private java.lang.String appName;  // attribute
+
+    public AppMetadataType() {
+    }
+
+    public AppMetadataType(
+           java.lang.String usage,
+           java.lang.String[] info,
+           edu.sdsc.nbcr.opal.types.ArgumentsType types,
+           java.lang.String appName) {
+           this.usage = usage;
+           this.info = info;
+           this.types = types;
+           this.appName = appName;
+    }
+
 
     /**
-     * Gets the value of the usage property.
+     * Gets the usage value for this AppMetadataType.
      * 
-     * @return
-     *     possible object is
-     *     {@link String }
-     *     
+     * @return usage
      */
-    public String getUsage() {
+    public java.lang.String getUsage() {
         return usage;
     }
 
-    /**
-     * Sets the value of the usage property.
-     * 
-     * @param value
-     *     allowed object is
-     *     {@link String }
-     *     
-     */
-    public void setUsage(String value) {
-        this.usage = value;
-    }
 
     /**
-     * Gets the value of the info property.
+     * Sets the usage value for this AppMetadataType.
      * 
-     * <p>
-     * This accessor method returns a reference to the live list,
-     * not a snapshot. Therefore any modification you make to the
-     * returned list will be present inside the JAXB object.
-     * This is why there is not a <CODE>set</CODE> method for the info property.
-     * 
-     * <p>
-     * For example, to add a new item, do as follows:
-     * <pre>
-     *    getInfo().add(newItem);
-     * </pre>
-     * 
-     * 
-     * <p>
-     * Objects of the following type(s) are allowed in the list
-     * {@link String }
-     * 
-     * 
+     * @param usage
      */
-    public List<String> getInfo() {
-        if (info == null) {
-            info = new ArrayList<String>();
-        }
-        return this.info;
+    public void setUsage(java.lang.String usage) {
+        this.usage = usage;
     }
 
+
     /**
-     * Gets the value of the types property.
+     * Gets the info value for this AppMetadataType.
      * 
-     * @return
-     *     possible object is
-     *     {@link ArgumentsType }
-     *     
+     * @return info
      */
-    public ArgumentsType getTypes() {
+    public java.lang.String[] getInfo() {
+        return info;
+    }
+
+
+    /**
+     * Sets the info value for this AppMetadataType.
+     * 
+     * @param info
+     */
+    public void setInfo(java.lang.String[] info) {
+        this.info = info;
+    }
+
+    public java.lang.String getInfo(int i) {
+        return this.info[i];
+    }
+
+    public void setInfo(int i, java.lang.String _value) {
+        this.info[i] = _value;
+    }
+
+
+    /**
+     * Gets the types value for this AppMetadataType.
+     * 
+     * @return types
+     */
+    public edu.sdsc.nbcr.opal.types.ArgumentsType getTypes() {
         return types;
     }
 
-    /**
-     * Sets the value of the types property.
-     * 
-     * @param value
-     *     allowed object is
-     *     {@link ArgumentsType }
-     *     
-     */
-    public void setTypes(ArgumentsType value) {
-        this.types = value;
-    }
 
     /**
-     * Gets the value of the appName property.
+     * Sets the types value for this AppMetadataType.
      * 
-     * @return
-     *     possible object is
-     *     {@link String }
-     *     
+     * @param types
      */
-    public String getAppName() {
+    public void setTypes(edu.sdsc.nbcr.opal.types.ArgumentsType types) {
+        this.types = types;
+    }
+
+
+    /**
+     * Gets the appName value for this AppMetadataType.
+     * 
+     * @return appName
+     */
+    public java.lang.String getAppName() {
         return appName;
     }
 
+
     /**
-     * Sets the value of the appName property.
+     * Sets the appName value for this AppMetadataType.
      * 
-     * @param value
-     *     allowed object is
-     *     {@link String }
-     *     
+     * @param appName
      */
-    public void setAppName(String value) {
-        this.appName = value;
+    public void setAppName(java.lang.String appName) {
+        this.appName = appName;
+    }
+
+    private java.lang.Object __equalsCalc = null;
+    public synchronized boolean equals(java.lang.Object obj) {
+        if (!(obj instanceof AppMetadataType)) return false;
+        AppMetadataType other = (AppMetadataType) obj;
+        if (obj == null) return false;
+        if (this == obj) return true;
+        if (__equalsCalc != null) {
+            return (__equalsCalc == obj);
+        }
+        __equalsCalc = obj;
+        boolean _equals;
+        _equals = true && 
+            ((this.usage==null && other.getUsage()==null) || 
+             (this.usage!=null &&
+              this.usage.equals(other.getUsage()))) &&
+            ((this.info==null && other.getInfo()==null) || 
+             (this.info!=null &&
+              java.util.Arrays.equals(this.info, other.getInfo()))) &&
+            ((this.types==null && other.getTypes()==null) || 
+             (this.types!=null &&
+              this.types.equals(other.getTypes()))) &&
+            ((this.appName==null && other.getAppName()==null) || 
+             (this.appName!=null &&
+              this.appName.equals(other.getAppName())));
+        __equalsCalc = null;
+        return _equals;
+    }
+
+    private boolean __hashCodeCalc = false;
+    public synchronized int hashCode() {
+        if (__hashCodeCalc) {
+            return 0;
+        }
+        __hashCodeCalc = true;
+        int _hashCode = 1;
+        if (getUsage() != null) {
+            _hashCode += getUsage().hashCode();
+        }
+        if (getInfo() != null) {
+            for (int i=0;
+                 i<java.lang.reflect.Array.getLength(getInfo());
+                 i++) {
+                java.lang.Object obj = java.lang.reflect.Array.get(getInfo(), i);
+                if (obj != null &&
+                    !obj.getClass().isArray()) {
+                    _hashCode += obj.hashCode();
+                }
+            }
+        }
+        if (getTypes() != null) {
+            _hashCode += getTypes().hashCode();
+        }
+        if (getAppName() != null) {
+            _hashCode += getAppName().hashCode();
+        }
+        __hashCodeCalc = false;
+        return _hashCode;
+    }
+
+    // Type metadata
+    private static org.apache.axis.description.TypeDesc typeDesc =
+        new org.apache.axis.description.TypeDesc(AppMetadataType.class, true);
+
+    static {
+        typeDesc.setXmlType(new javax.xml.namespace.QName("http://nbcr.sdsc.edu/opal/types", "AppMetadataType"));
+        org.apache.axis.description.AttributeDesc attrField = new org.apache.axis.description.AttributeDesc();
+        attrField.setFieldName("appName");
+        attrField.setXmlName(new javax.xml.namespace.QName("", "appName"));
+        attrField.setXmlType(new javax.xml.namespace.QName("http://www.w3.org/2001/XMLSchema", "string"));
+        typeDesc.addFieldDesc(attrField);
+        org.apache.axis.description.ElementDesc elemField = new org.apache.axis.description.ElementDesc();
+        elemField.setFieldName("usage");
+        elemField.setXmlName(new javax.xml.namespace.QName("", "usage"));
+        elemField.setXmlType(new javax.xml.namespace.QName("http://www.w3.org/2001/XMLSchema", "string"));
+        elemField.setNillable(false);
+        typeDesc.addFieldDesc(elemField);
+        elemField = new org.apache.axis.description.ElementDesc();
+        elemField.setFieldName("info");
+        elemField.setXmlName(new javax.xml.namespace.QName("", "info"));
+        elemField.setXmlType(new javax.xml.namespace.QName("http://www.w3.org/2001/XMLSchema", "string"));
+        elemField.setMinOccurs(0);
+        elemField.setNillable(false);
+        elemField.setMaxOccursUnbounded(true);
+        typeDesc.addFieldDesc(elemField);
+        elemField = new org.apache.axis.description.ElementDesc();
+        elemField.setFieldName("types");
+        elemField.setXmlName(new javax.xml.namespace.QName("", "types"));
+        elemField.setXmlType(new javax.xml.namespace.QName("http://nbcr.sdsc.edu/opal/types", "ArgumentsType"));
+        elemField.setMinOccurs(0);
+        elemField.setNillable(false);
+        typeDesc.addFieldDesc(elemField);
+    }
+
+    /**
+     * Return type metadata object
+     */
+    public static org.apache.axis.description.TypeDesc getTypeDesc() {
+        return typeDesc;
+    }
+
+    /**
+     * Get Custom Serializer
+     */
+    public static org.apache.axis.encoding.Serializer getSerializer(
+           java.lang.String mechType, 
+           java.lang.Class _javaType,  
+           javax.xml.namespace.QName _xmlType) {
+        return 
+          new  org.apache.axis.encoding.ser.BeanSerializer(
+            _javaType, _xmlType, typeDesc);
+    }
+
+    /**
+     * Get Custom Deserializer
+     */
+    public static org.apache.axis.encoding.Deserializer getDeserializer(
+           java.lang.String mechType, 
+           java.lang.Class _javaType,  
+           javax.xml.namespace.QName _xmlType) {
+        return 
+          new  org.apache.axis.encoding.ser.BeanDeserializer(
+            _javaType, _xmlType, typeDesc);
     }
 
 }
