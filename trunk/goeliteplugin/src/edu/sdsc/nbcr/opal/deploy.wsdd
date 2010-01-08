@@ -1,0 +1,255 @@
+<!-- Use this file to deploy some handlers/chains and services      -->
+<!-- Two ways to do this:                                           -->
+<!--   java org.apache.axis.client.AdminClient deploy.wsdd          -->
+<!--      after the axis server is running                          -->
+<!-- or                                                             -->
+<!--   java org.apache.axis.utils.Admin client|server deploy.wsdd   -->
+<!--      from the same directory that the Axis engine runs         -->
+
+<deployment
+    xmlns="http://xml.apache.org/axis/wsdd/"
+    xmlns:java="http://xml.apache.org/axis/wsdd/providers/java">
+
+  <!-- Services from AppService WSDL service -->
+
+  <service name="AppServicePort" provider="java:RPC" style="document" use="literal">
+      <parameter name="wsdlTargetNamespace" value="http://nbcr.sdsc.edu/opal"/>
+      <parameter name="wsdlServiceElement" value="AppService"/>
+      <parameter name="schemaUnqualified" value="http://nbcr.sdsc.edu/opal/types"/>
+      <parameter name="wsdlServicePort" value="AppServicePort"/>
+      <parameter name="className" value="edu.sdsc.nbcr.opal.AppServicePortSoapBindingImpl"/>
+      <parameter name="wsdlPortType" value="AppServicePortType"/>
+      <parameter name="typeMappingVersion" value="1.2"/>
+      <operation name="getAppMetadata" qname="getAppMetadata" returnQName="retNS:getAppMetadataOutput" xmlns:retNS="http://nbcr.sdsc.edu/opal/types" returnType="rtns:AppMetadataType" xmlns:rtns="http://nbcr.sdsc.edu/opal/types" soapAction="http://nbcr.sdsc.edu/opal/getAppMetadata" >
+        <parameter qname="pns:getAppMetadataInput" xmlns:pns="http://nbcr.sdsc.edu/opal/types" type="tns:AppMetadataInputType" xmlns:tns="http://nbcr.sdsc.edu/opal/types"/>
+        <fault name="FaultType" qname="fns:opalFaultOutput" xmlns:fns="http://nbcr.sdsc.edu/opal/types" class="edu.sdsc.nbcr.opal.types.FaultType" type="tns:FaultType" xmlns:tns="http://nbcr.sdsc.edu/opal/types"/>
+      </operation>
+      <operation name="getAppConfig" qname="getAppConfig" returnQName="retNS:getAppConfigOutput" xmlns:retNS="http://nbcr.sdsc.edu/opal/types" returnType="rtns:AppConfigType" xmlns:rtns="http://nbcr.sdsc.edu/opal/types" soapAction="http://nbcr.sdsc.edu/opal/getAppConfig" >
+        <parameter qname="pns:getAppConfigInput" xmlns:pns="http://nbcr.sdsc.edu/opal/types" type="tns:AppConfigInputType" xmlns:tns="http://nbcr.sdsc.edu/opal/types"/>
+        <fault name="FaultType" qname="fns:opalFaultOutput" xmlns:fns="http://nbcr.sdsc.edu/opal/types" class="edu.sdsc.nbcr.opal.types.FaultType" type="tns:FaultType" xmlns:tns="http://nbcr.sdsc.edu/opal/types"/>
+      </operation>
+      <operation name="launchJob" qname="launchJob" returnQName="retNS:launchJobOutput" xmlns:retNS="http://nbcr.sdsc.edu/opal/types" returnType="rtns:JobSubOutputType" xmlns:rtns="http://nbcr.sdsc.edu/opal/types" soapAction="http://nbcr.sdsc.edu/opal/launchJob" >
+        <parameter qname="pns:launchJobInput" xmlns:pns="http://nbcr.sdsc.edu/opal/types" type="tns:JobInputType" xmlns:tns="http://nbcr.sdsc.edu/opal/types"/>
+        <fault name="FaultType" qname="fns:opalFaultOutput" xmlns:fns="http://nbcr.sdsc.edu/opal/types" class="edu.sdsc.nbcr.opal.types.FaultType" type="tns:FaultType" xmlns:tns="http://nbcr.sdsc.edu/opal/types"/>
+      </operation>
+      <operation name="launchJobBlocking" qname="launchJobBlocking" returnQName="retNS:launchJobBlockingOutput" xmlns:retNS="http://nbcr.sdsc.edu/opal/types" returnType="rtns:BlockingOutputType" xmlns:rtns="http://nbcr.sdsc.edu/opal/types" soapAction="http://nbcr.sdsc.edu/opal/launchJobBlocking" >
+        <parameter qname="pns:launchJobBlockingInput" xmlns:pns="http://nbcr.sdsc.edu/opal/types" type="tns:JobInputType" xmlns:tns="http://nbcr.sdsc.edu/opal/types"/>
+        <fault name="FaultType" qname="fns:opalFaultOutput" xmlns:fns="http://nbcr.sdsc.edu/opal/types" class="edu.sdsc.nbcr.opal.types.FaultType" type="tns:FaultType" xmlns:tns="http://nbcr.sdsc.edu/opal/types"/>
+      </operation>
+      <operation name="queryStatus" qname="queryStatus" returnQName="retNS:queryStatusOutput" xmlns:retNS="http://nbcr.sdsc.edu/opal/types" returnType="rtns:StatusOutputType" xmlns:rtns="http://nbcr.sdsc.edu/opal/types" soapAction="http://nbcr.sdsc.edu/opal/queryStatus" >
+        <parameter qname="pns:queryStatusInput" xmlns:pns="http://nbcr.sdsc.edu/opal/types" type="tns:string" xmlns:tns="http://www.w3.org/2001/XMLSchema"/>
+        <fault name="FaultType" qname="fns:opalFaultOutput" xmlns:fns="http://nbcr.sdsc.edu/opal/types" class="edu.sdsc.nbcr.opal.types.FaultType" type="tns:FaultType" xmlns:tns="http://nbcr.sdsc.edu/opal/types"/>
+      </operation>
+      <operation name="getOutputs" qname="getOutputs" returnQName="retNS:getOutputsOutput" xmlns:retNS="http://nbcr.sdsc.edu/opal/types" returnType="rtns:JobOutputType" xmlns:rtns="http://nbcr.sdsc.edu/opal/types" soapAction="http://nbcr.sdsc.edu/opal/getOutputs" >
+        <parameter qname="pns:getOutputsInput" xmlns:pns="http://nbcr.sdsc.edu/opal/types" type="tns:string" xmlns:tns="http://www.w3.org/2001/XMLSchema"/>
+        <fault name="FaultType" qname="fns:opalFaultOutput" xmlns:fns="http://nbcr.sdsc.edu/opal/types" class="edu.sdsc.nbcr.opal.types.FaultType" type="tns:FaultType" xmlns:tns="http://nbcr.sdsc.edu/opal/types"/>
+      </operation>
+      <operation name="getOutputAsBase64ByName" qname="getOutputAsBase64ByName" returnQName="retNS:getOutputAsBase64ByNameOutput" xmlns:retNS="http://nbcr.sdsc.edu/opal/types" returnType="rtns:>getOutputAsBase64ByNameOutput" xmlns:rtns="http://nbcr.sdsc.edu/opal/types" returnItemQName="item" soapAction="http://nbcr.sdsc.edu/opal/getOutputAsBase64ByName" >
+        <parameter qname="pns:getOutputAsBase64ByNameInput" xmlns:pns="http://nbcr.sdsc.edu/opal/types" type="tns:OutputsByNameInputType" xmlns:tns="http://nbcr.sdsc.edu/opal/types"/>
+        <fault name="FaultType" qname="fns:opalFaultOutput" xmlns:fns="http://nbcr.sdsc.edu/opal/types" class="edu.sdsc.nbcr.opal.types.FaultType" type="tns:FaultType" xmlns:tns="http://nbcr.sdsc.edu/opal/types"/>
+      </operation>
+      <operation name="destroy" qname="destroy" returnQName="retNS:destroyOutput" xmlns:retNS="http://nbcr.sdsc.edu/opal/types" returnType="rtns:StatusOutputType" xmlns:rtns="http://nbcr.sdsc.edu/opal/types" soapAction="http://nbcr.sdsc.edu/opal/destroy" >
+        <parameter qname="pns:destroyInput" xmlns:pns="http://nbcr.sdsc.edu/opal/types" type="tns:string" xmlns:tns="http://www.w3.org/2001/XMLSchema"/>
+        <fault name="FaultType" qname="fns:opalFaultOutput" xmlns:fns="http://nbcr.sdsc.edu/opal/types" class="edu.sdsc.nbcr.opal.types.FaultType" type="tns:FaultType" xmlns:tns="http://nbcr.sdsc.edu/opal/types"/>
+      </operation>
+      <parameter name="allowedMethods" value="destroy queryStatus getOutputAsBase64ByName getAppMetadata launchJobBlocking getAppConfig getOutputs launchJob"/>
+      <parameter name="scope" value="Application"/>
+
+      <typeMapping
+        xmlns:ns="http://nbcr.sdsc.edu/opal/types"
+        qname="ns:FlagsType"
+        type="java:edu.sdsc.nbcr.opal.types.FlagsType"
+        serializer="org.apache.axis.encoding.ser.BeanSerializerFactory"
+        deserializer="org.apache.axis.encoding.ser.BeanDeserializerFactory"
+        encodingStyle=""
+      />
+      <typeMapping
+        xmlns:ns="http://nbcr.sdsc.edu/opal/types"
+        qname="ns:InputFileType"
+        type="java:edu.sdsc.nbcr.opal.types.InputFileType"
+        serializer="org.apache.axis.encoding.ser.BeanSerializerFactory"
+        deserializer="org.apache.axis.encoding.ser.BeanDeserializerFactory"
+        encodingStyle=""
+      />
+      <typeMapping
+        xmlns:ns="http://nbcr.sdsc.edu/opal/types"
+        qname="ns:AppMetadataInputType"
+        type="java:edu.sdsc.nbcr.opal.types.AppMetadataInputType"
+        serializer="org.apache.axis.encoding.ser.BeanSerializerFactory"
+        deserializer="org.apache.axis.encoding.ser.BeanDeserializerFactory"
+        encodingStyle=""
+      />
+      <typeMapping
+        xmlns:ns="http://nbcr.sdsc.edu/opal/types"
+        qname="ns:BlockingOutputType"
+        type="java:edu.sdsc.nbcr.opal.types.BlockingOutputType"
+        serializer="org.apache.axis.encoding.ser.BeanSerializerFactory"
+        deserializer="org.apache.axis.encoding.ser.BeanDeserializerFactory"
+        encodingStyle=""
+      />
+      <arrayMapping
+        xmlns:ns="http://nbcr.sdsc.edu/opal/types"
+        qname="ns:FlagsArrayType"
+        type="java:edu.sdsc.nbcr.opal.types.FlagsType[]"
+        innerType="cmp-ns:FlagsType" xmlns:cmp-ns="http://nbcr.sdsc.edu/opal/types"
+        encodingStyle=""
+      />
+      <typeMapping
+        xmlns:ns="http://nbcr.sdsc.edu/opal/types"
+        qname="ns:AppMetadataType"
+        type="java:edu.sdsc.nbcr.opal.types.AppMetadataType"
+        serializer="org.apache.axis.encoding.ser.BeanSerializerFactory"
+        deserializer="org.apache.axis.encoding.ser.BeanDeserializerFactory"
+        encodingStyle=""
+      />
+      <arrayMapping
+        xmlns:ns="http://nbcr.sdsc.edu/opal/types"
+        qname="ns:ImplicitParamsArrayType"
+        type="java:edu.sdsc.nbcr.opal.types.ImplicitParamsType[]"
+        innerType="cmp-ns:ImplicitParamsType" xmlns:cmp-ns="http://nbcr.sdsc.edu/opal/types"
+        encodingStyle=""
+      />
+      <typeMapping
+        xmlns:ns="http://nbcr.sdsc.edu/opal/types"
+        qname="ns:JobOutputType"
+        type="java:edu.sdsc.nbcr.opal.types.JobOutputType"
+        serializer="org.apache.axis.encoding.ser.BeanSerializerFactory"
+        deserializer="org.apache.axis.encoding.ser.BeanDeserializerFactory"
+        encodingStyle=""
+      />
+      <typeMapping
+        xmlns:ns="http://nbcr.sdsc.edu/opal/types"
+        qname="ns:OutputFileType"
+        type="java:edu.sdsc.nbcr.opal.types.OutputFileType"
+        serializer="org.apache.axis.encoding.ser.BeanSerializerFactory"
+        deserializer="org.apache.axis.encoding.ser.BeanDeserializerFactory"
+        encodingStyle=""
+      />
+      <typeMapping
+        xmlns:ns="http://nbcr.sdsc.edu/opal/types"
+        qname="ns:ParamsType"
+        type="java:edu.sdsc.nbcr.opal.types.ParamsType"
+        serializer="org.apache.axis.encoding.ser.BeanSerializerFactory"
+        deserializer="org.apache.axis.encoding.ser.BeanDeserializerFactory"
+        encodingStyle=""
+      />
+      <typeMapping
+        xmlns:ns="http://nbcr.sdsc.edu/opal/types"
+        qname="ns:JobInputType"
+        type="java:edu.sdsc.nbcr.opal.types.JobInputType"
+        serializer="org.apache.axis.encoding.ser.BeanSerializerFactory"
+        deserializer="org.apache.axis.encoding.ser.BeanDeserializerFactory"
+        encodingStyle=""
+      />
+      <arrayMapping
+        xmlns:ns="http://nbcr.sdsc.edu/opal/types"
+        qname="ns:GroupsArrayType"
+        type="java:edu.sdsc.nbcr.opal.types.GroupsType[]"
+        innerType="cmp-ns:GroupsType" xmlns:cmp-ns="http://nbcr.sdsc.edu/opal/types"
+        encodingStyle=""
+      />
+      <typeMapping
+        xmlns:ns="http://nbcr.sdsc.edu/opal/types"
+        qname="ns:AppConfigType"
+        type="java:edu.sdsc.nbcr.opal.types.AppConfigType"
+        serializer="org.apache.axis.encoding.ser.BeanSerializerFactory"
+        deserializer="org.apache.axis.encoding.ser.BeanDeserializerFactory"
+        encodingStyle=""
+      />
+      <typeMapping
+        xmlns:ns="http://nbcr.sdsc.edu/opal/types"
+        qname="ns:StatusOutputType"
+        type="java:edu.sdsc.nbcr.opal.types.StatusOutputType"
+        serializer="org.apache.axis.encoding.ser.BeanSerializerFactory"
+        deserializer="org.apache.axis.encoding.ser.BeanDeserializerFactory"
+        encodingStyle=""
+      />
+      <typeMapping
+        xmlns:ns="http://nbcr.sdsc.edu/opal/types"
+        qname="ns:ParamType"
+        type="java:edu.sdsc.nbcr.opal.types.ParamType"
+        serializer="org.apache.axis.encoding.ser.EnumSerializerFactory"
+        deserializer="org.apache.axis.encoding.ser.EnumDeserializerFactory"
+        encodingStyle=""
+      />
+      <typeMapping
+        xmlns:ns="http://nbcr.sdsc.edu/opal/types"
+        qname="ns:ImplicitParamsType"
+        type="java:edu.sdsc.nbcr.opal.types.ImplicitParamsType"
+        serializer="org.apache.axis.encoding.ser.BeanSerializerFactory"
+        deserializer="org.apache.axis.encoding.ser.BeanDeserializerFactory"
+        encodingStyle=""
+      />
+      <typeMapping
+        xmlns:ns="http://nbcr.sdsc.edu/opal/types"
+        qname="ns:OutputsByNameInputType"
+        type="java:edu.sdsc.nbcr.opal.types.OutputsByNameInputType"
+        serializer="org.apache.axis.encoding.ser.BeanSerializerFactory"
+        deserializer="org.apache.axis.encoding.ser.BeanDeserializerFactory"
+        encodingStyle=""
+      />
+      <typeMapping
+        xmlns:ns="http://nbcr.sdsc.edu/opal/types"
+        qname="ns:IOType"
+        type="java:edu.sdsc.nbcr.opal.types.IOType"
+        serializer="org.apache.axis.encoding.ser.EnumSerializerFactory"
+        deserializer="org.apache.axis.encoding.ser.EnumDeserializerFactory"
+        encodingStyle=""
+      />
+      <typeMapping
+        xmlns:ns="http://nbcr.sdsc.edu/opal/types"
+        qname="ns:ParamsArrayType"
+        type="java:edu.sdsc.nbcr.opal.types.ParamsArrayType"
+        serializer="org.apache.axis.encoding.ser.BeanSerializerFactory"
+        deserializer="org.apache.axis.encoding.ser.BeanDeserializerFactory"
+        encodingStyle=""
+      />
+      <typeMapping
+        xmlns:ns="http://nbcr.sdsc.edu/opal/types"
+        qname="ns:GroupsType"
+        type="java:edu.sdsc.nbcr.opal.types.GroupsType"
+        serializer="org.apache.axis.encoding.ser.BeanSerializerFactory"
+        deserializer="org.apache.axis.encoding.ser.BeanDeserializerFactory"
+        encodingStyle=""
+      />
+      <typeMapping
+        xmlns:ns="http://nbcr.sdsc.edu/opal/types"
+        qname="ns:ArgumentsType"
+        type="java:edu.sdsc.nbcr.opal.types.ArgumentsType"
+        serializer="org.apache.axis.encoding.ser.BeanSerializerFactory"
+        deserializer="org.apache.axis.encoding.ser.BeanDeserializerFactory"
+        encodingStyle=""
+      />
+      <typeMapping
+        xmlns:ns="http://nbcr.sdsc.edu/opal/types"
+        qname="ns:AppConfigInputType"
+        type="java:edu.sdsc.nbcr.opal.types.AppConfigInputType"
+        serializer="org.apache.axis.encoding.ser.BeanSerializerFactory"
+        deserializer="org.apache.axis.encoding.ser.BeanDeserializerFactory"
+        encodingStyle=""
+      />
+      <arrayMapping
+        xmlns:ns="http://nbcr.sdsc.edu/opal/types"
+        qname="ns:>getOutputAsBase64ByNameOutput"
+        type="java:byte[]"
+        innerType="cmp-ns:byte" xmlns:cmp-ns="http://www.w3.org/2001/XMLSchema"
+        encodingStyle=""
+      />
+      <typeMapping
+        xmlns:ns="http://nbcr.sdsc.edu/opal/types"
+        qname="ns:JobSubOutputType"
+        type="java:edu.sdsc.nbcr.opal.types.JobSubOutputType"
+        serializer="org.apache.axis.encoding.ser.BeanSerializerFactory"
+        deserializer="org.apache.axis.encoding.ser.BeanDeserializerFactory"
+        encodingStyle=""
+      />
+      <typeMapping
+        xmlns:ns="http://nbcr.sdsc.edu/opal/types"
+        qname="ns:FaultType"
+        type="java:edu.sdsc.nbcr.opal.types.FaultType"
+        serializer="org.apache.axis.encoding.ser.BeanSerializerFactory"
+        deserializer="org.apache.axis.encoding.ser.BeanDeserializerFactory"
+        encodingStyle=""
+      />
+  </service>
+</deployment>
