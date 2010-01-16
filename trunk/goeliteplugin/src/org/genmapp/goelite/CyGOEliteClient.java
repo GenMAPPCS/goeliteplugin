@@ -32,9 +32,12 @@ import cytoscape.task.ui.JTaskConfig;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 
-
 /**
- * 
+ * @author apico
+ *
+ */
+/**
+ * @author apico
  *
  */
 public class CyGOEliteClient extends WebServiceClientImplWithGUI<AppServicePortType, CyGOEliteClientGUI>
