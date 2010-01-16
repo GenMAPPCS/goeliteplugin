@@ -2,6 +2,13 @@ package org.genmapp.goelite;
 
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
+
+import edu.sdsc.nbcr.opal.types.InputFileType;
+import edu.sdsc.nbcr.opal.types.JobInputType;
+import edu.sdsc.nbcr.opal.types.JobOutputType;
+import edu.sdsc.nbcr.opal.types.JobSubOutputType;
+import edu.sdsc.nbcr.opal.types.OutputFileType;
+import edu.sdsc.nbcr.opal.types.StatusOutputType;
 import java.awt.event.ActionListener;
 import java.io.BufferedInputStream;
 import java.io.DataInputStream;
@@ -11,19 +18,32 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
-
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Enumeration;
+import java.util.Vector;
+import java.io.BufferedInputStream;
+import java.io.DataInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
+import edu.sdsc.nbcr.opal.*;
 import javax.swing.JButton;
 import javax.swing.JDialog;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JPanel;
-import javax.swing.SwingWorker;
-
+import javax.swing.JTable;
+import javax.swing.SwingConstants;
 import cytoscape.Cytoscape;
 import cytoscape.data.webservice.WebServiceClientManager;
 import cytoscape.layout.LayoutProperties;
 import cytoscape.layout.Tunable;
 import cytoscape.plugin.CytoscapePlugin;
+import cytoscape.view.cytopanels.CytoPanel;
 import edu.sdsc.nbcr.opal.AppServiceLocator;
 import edu.sdsc.nbcr.opal.AppServicePortType;
 import edu.sdsc.nbcr.opal.types.InputFileType;
@@ -252,113 +272,149 @@ public class GOElitePlugin extends CytoscapePlugin
 			    	return status;
 			    }
 
+			    public Vector<String> getFileContents(URL u) throws MalformedURLException, IOException
+			    {
+					Vector<String> contents = new Vector<String>();
+
+					InputStream is = null;
+					DataInputStream dis = null;
+					
+					// ----------------------------------------------//
+					// Step 3: Open an input stream from the
+					// url. //
+					// ----------------------------------------------//
+
+					is = u.openStream(); // throws an
+											// IOException
+					// -------------------------------------------------------------//
+
+					// Step 4: //
+					// -------------------------------------------------------------//
+					// Convert the InputStream to a buffered
+					// DataInputStream. //
+					// Buffering the stream makes the reading
+					// faster; the //
+					// readLine() method of the DataInputStream
+					// makes the reading //
+					// easier. //
+					// -------------------------------------------------------------//
+
+					dis = new DataInputStream(
+							new BufferedInputStream(is));
+
+					// ------------------------------------------------------------//
+					// Step 5: //
+					// ------------------------------------------------------------//
+					// Now just read each record of the input
+					// stream, and print //
+					// it out. Note that it's assumed that this
+					// problem is run //
+					// from a command-line, not from an
+					// application or applet. //
+					// ------------------------------------------------------------//
+
+					String s = null;
+					while ((s = dis.readLine()) != null) {
+						contents.add( s );
+					}
+
+					return (contents);
+				}
+
 			    @Override
 			    public void done() 
 			    {			      
 			    	System.out.println( "done!" );
-			        try {
-			            StatusOutputType status = get();
-			            if ( status.getCode() == 8 )
-			            {
-			                 JobOutputType outputs = service.getOutputs( jobID );
-			                 OutputFileType[] files = outputs.getOutputFile();
-			                 for ( int i =0; i < files.length; i++ )
-			                 {
-		                	     URL u;
-						         InputStream is = null;
-						         DataInputStream dis;
-						         String s;
-						         System.out.println( files[ i ].getName() );
-						         if ( files[ i ].getName().contains( "GO-Elite_results" )  )
-						         {
-						        	 // dig into the results folder to get the file we care about
-							         u = new URL( files[ i ].getUrl().toString() +
-							        		 "/pruned-results_z-score_elite.txt" );
-						         }
-						         else
-						         {
-						        	 continue;
-						         }
-						         System.out.println( "Output URL: " + u );
-
-						         try
-			                	 {
-								    //----------------------------------------------//
-						            // Step 3:  Open an input stream from the url.  //
-						            //----------------------------------------------//
+			    	try
+			    	{
 	
-						            is = u.openStream();         // throws an IOException
-	
-						            //-------------------------------------------------------------//
-						            // Step 4:                                                     //
-						            //-------------------------------------------------------------//
-						            // Convert the InputStream to a buffered DataInputStream.      //
-						            // Buffering the stream makes the reading faster; the          //
-						            // readLine() method of the DataInputStream makes the reading  //
-						            // easier.                                                     //
-						            //-------------------------------------------------------------//
-	
-						            dis = new DataInputStream(new BufferedInputStream(is));
-	
-						            //------------------------------------------------------------//
-						            // Step 5:                                                    //
-						            //------------------------------------------------------------//
-						            // Now just read each record of the input stream, and print   //
-						            // it out.  Note that it's assumed that this problem is run   //
-						            // from a command-line, not from an application or applet.    //
-						            //------------------------------------------------------------//
-	
-						            while ((s = dis.readLine()) != null) {
-						               System.out.println(s);
-						            }
-
-						         } catch (MalformedURLException mue) {
-	
-						            System.out.println("Ouch - a MalformedURLException happened.");
-						            mue.printStackTrace();
-						            System.exit(1);
-	
-						         } catch (IOException ioe) {
-	
-						            System.out.println("Oops- an IOException happened.");
-						            ioe.printStackTrace();
-						            System.exit(1);
-	
-						         } finally {
-	
-						            //---------------------------------//
-						            // Step 6:  Close the InputStream  //
-						            //---------------------------------//
-	
-						            try {
-						               is.close();
-						            } catch (IOException ioe) {
-						               // just going to ignore this one
-						            }
-	
-						         } // end of 'finally' clause
-			                 
-					      }  
-			            }
-			        } catch (InterruptedException ignore) {}
-			        
-			        catch (java.util.concurrent.ExecutionException e) {
-			            String why = null;
-			            Throwable cause = e.getCause();
-			            if (cause != null) {
-			                why = cause.getMessage();
-			            } else {
-			                why = e.getMessage();
-			            }
-			            System.err.println("Error retrieving file: " + why);
-			        }
-			        catch( Exception e ) { System.out.println( "Exception: " + e ); }
-			    }
+				    	// print results in results panel
+						StatusOutputType status = get();
+						if (status.getCode() == 8) {
+							JobOutputType outputs = service.getOutputs(jobID);
+							OutputFileType[] files = outputs.getOutputFile();
+							for (int i = 0; i < files.length; i++) {
+								URL u;
+								InputStream is = null;
+								DataInputStream dis;
+								String s;
+								System.out.println(files[i].getName());
+								if (files[i].getName().contains(
+										"GO-Elite_results")) {
+									// dig into the results folder to get the
+									// file we care about
+									u = new URL(
+											files[i].getUrl().toString()
+													+ "/pruned-results_z-score_elite.txt");
+								} else {
+									continue;
+								}							
+								System.out.println("Output URL: " + u);
+								
+								Vector<String> fileContents = getFileContents( u );
+								Enumeration< String > contents = fileContents.elements();
+								
+							    Vector< String > GONameResultsColumnNames = new Vector< String >();
+							    Vector< String > pathwayResultsColumnNames = new Vector< String >();
+							    Vector< Vector > GONameResultsColumnData = new Vector< Vector >();
+							    Vector< Vector > pathwayResultsColumnData = new Vector< Vector >();
+								boolean processingGONameResultsNotPathwayResults = true;
+							    
+								while( contents.hasMoreElements() )
+								{
+									String line = ( String )contents.nextElement() ;
+									Vector<String> columnsAsVector = new Vector< String >();
+									String [] columnsData = ( line ).split( "\t" ); 
+									
+									if ( columnsData[ 2 ].contains( "MAPP" )) 
+									{
+										processingGONameResultsNotPathwayResults = false;
+									}
+									
+									if ( columnsData.length <= 1 ) { continue; } // ignore blank lines
+									
+									// is this a column header?
+									if ( processingGONameResultsNotPathwayResults && GONameResultsColumnNames.size() == 0 )
+									{
+										GONameResultsColumnNames.addAll( Arrays.asList( columnsData ) );
+										continue;
+									}
+									else if ( !processingGONameResultsNotPathwayResults && pathwayResultsColumnNames.size() == 0 )
+									{
+										pathwayResultsColumnNames.addAll( Arrays.asList( columnsData ) );
+										continue;
+									}
+								
+									// it's a data line
+									if ( processingGONameResultsNotPathwayResults )
+									{
+										GONameResultsColumnData.add( new Vector< String >( Arrays.asList( columnsData ) ) );										
+									}
+									else
+									{
+										pathwayResultsColumnData.add( new Vector< String >( Arrays.asList( columnsData ) ) );										
+									}
+								}
+								
+								// populate tables
+								JTable GONameResultsTable = new JTable( GONameResultsColumnData, GONameResultsColumnNames );
+								JTable pathwayResultsTable = new JTable( pathwayResultsColumnData, pathwayResultsColumnNames );
+						    	CytoPanel cytoPanel = Cytoscape.getDesktop().getCytoPanel(SwingConstants.EAST);
+								cytoPanel.add( GONameResultsTable );
+								cytoPanel.add( pathwayResultsTable );
+							} // for ... end 
+						} // if... end
+			    	}
+					catch( Exception e )
+					{
+						System.out.println( "Exception " + e );
+					}  // try...catch...end		
+					
+			    } // done() end
 			};
 
 			worker.execute();
 		}
-		
 	}
 	// Handles the top-level menu selection event from Cytoscape
 	class GoElitePluginCommandListener implements ActionListener {
