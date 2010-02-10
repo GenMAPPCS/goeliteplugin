@@ -1,8 +1,10 @@
 package org.genmapp.goelite;
 
 import java.awt.Dimension;
+import java.io.FileWriter;
 import java.awt.event.ActionEvent;
-
+import java.awt.Toolkit;
+import java.awt.TextArea;
 import edu.sdsc.nbcr.opal.types.InputFileType;
 import edu.sdsc.nbcr.opal.types.JobInputType;
 import edu.sdsc.nbcr.opal.types.JobOutputType;
@@ -38,6 +40,8 @@ import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JTable;
 import javax.swing.SwingConstants;
+import org.jdesktop.swingworker.SwingWorker;  // Part of JDK 1.6, use backported version for now
+
 import cytoscape.Cytoscape;
 import cytoscape.data.webservice.WebServiceClientManager;
 import cytoscape.layout.LayoutProperties;
@@ -63,13 +67,13 @@ import edu.sdsc.nbcr.opal.types.StatusOutputType;
  * : the dialog disappears immediately after the user hits "submit"
  * : while processing occurs, the results tab gives some indicator of the current progress
  * : upon processing completion, 
- * 
+ *  
  * Outputs:
  * - tree of terms and scores
  * - Jpanel, with list of pathways
  */
 public class GOElitePlugin extends CytoscapePlugin 
-{
+{	
 	public static byte[] getBytesFromFile(File file) throws IOException {
 	    InputStream is = new FileInputStream(file);
 	
@@ -133,6 +137,7 @@ public class GOElitePlugin extends CytoscapePlugin
 	class GOEliteInputDialog extends JDialog implements ActionListener
 	{
 		JButton launchButton = null;
+		TextArea debugWindow = null;
 		public final static long serialVersionUID = 0;
 		AppServicePortType service = null;
 		String jobID = null;
@@ -144,7 +149,6 @@ public class GOElitePlugin extends CytoscapePlugin
 		
 		public GOEliteInputDialog( )
 		{
-
 	        layoutProperties = new LayoutProperties( "Go-elite" );
 
 	        // XXX - Not supported by webservice
@@ -178,20 +182,23 @@ public class GOElitePlugin extends CytoscapePlugin
 		    JPanel panel = layoutProperties.getTunablePanel();
 		    add( panel );
 		    
-		    launchButton = new JButton( "Launch" );		    
+		    launchButton = new JButton( "Launch!" );		    
 		    panel.add( launchButton );
 		    launchButton.addActionListener( this );
 
+		    debugWindow = new TextArea( "Hi!", 5, 40 );
+		    panel.add( debugWindow );
 		    panel.setSize( 350, 500 );
 		    panel.setVisible( true );
 		}
 		public void actionPerformed( ActionEvent evt_ )
 		{
-			if ( evt_.getSource() != launchButton ) { return; }
-
+			debugWindow.append( "evt source: " + evt_.getSource() );
+			//if ( evt_.getSource() != launchButton ) { return; }
+			
 			// The User just launched a job request
 			// spawn worker thread			
-			SwingWorker worker = new SwingWorker<StatusOutputType, Void>() 
+			SwingWorker<StatusOutputType, Void> worker = new SwingWorker<StatusOutputType, Void>() 
 			{
 				edu.sdsc.nbcr.opal.types.StatusOutputType status = null;
 					    @Override
@@ -206,10 +213,11 @@ public class GOElitePlugin extends CytoscapePlugin
 					    		"http://webservices.cgl.ucsf.edu/opal/services/GOEliteService" 
 					    );
 					    System.out.println( "1>" + findService );
-					    
+					    debugWindow.append( "1>" + findService  + "\n" );
 					
 					    service = findService.getAppServicePort(); 
 					    System.out.println( "2>" + service );
+					    debugWindow.append( "2>" + service  + "\n" );
 					    JobInputType launchJobInput = new JobInputType();
 		
 					    layoutProperties.updateValues();  // must do this to refresh contents of the Tunables before we read from them
@@ -248,6 +256,7 @@ public class GOElitePlugin extends CytoscapePlugin
 					    				 "--num " + layoutProperties.getValue( "min_num_genes_changed" ) + " "  +
 					    				 "--zscore " + layoutProperties.getValue( "z-score_thresh" ) + " ";
 					    System.out.println ( "argList: " + argList );				 
+					    debugWindow.append( "argList" + argList + "\n" );
 					    launchJobInput.setArgList( argList );
 					    
 					    InputFileType[] list = {geneListOpalFile, denomOpalFile};
@@ -256,13 +265,15 @@ public class GOElitePlugin extends CytoscapePlugin
 					    
 					    jobID = output.getJobID();
 					    System.out.println( "Job: " + jobID );
-	
+					    debugWindow.append( "Job: " + jobID  + "\n" );
+
 					    // 8 is the code for completion
 				    	while( status == null || 8 != status.getCode() )
 				    	{
 				    		Thread.sleep( 5000 );
 				    		status = service.queryStatus( output.getJobID() );
 				    		System.out.println( "[" + status.getCode() + "] " + status.getMessage() ); 
+				    		debugWindow.append( "[" + status.getCode() + "] " + status.getMessage() + "\n" );
 				    	 }
 			    	}
 			    	catch( Exception e )
@@ -325,6 +336,7 @@ public class GOElitePlugin extends CytoscapePlugin
 			    public void done() 
 			    {			      
 			    	System.out.println( "done!" );
+			    	debugWindow.append( "done!\n" );
 			    	try
 			    	{
 	
@@ -339,10 +351,12 @@ public class GOElitePlugin extends CytoscapePlugin
 								DataInputStream dis;
 								String s;
 								System.out.println(files[i].getName());
+						    	debugWindow.append( files[i].getName() + "\n" );
 								if (files[i].getName().contains(
 										"GO-Elite_results")) {
 									// dig into the results folder to get the
 									// file we care about
+							    	debugWindow.append( "results found\n" );
 									u = new URL(
 											files[i].getUrl().toString()
 													+ "/pruned-results_z-score_elite.txt");
@@ -350,6 +364,7 @@ public class GOElitePlugin extends CytoscapePlugin
 									continue;
 								}							
 								System.out.println("Output URL: " + u);
+						    	debugWindow.append( "Output URL: " + u + "\n" );
 								
 								Vector<String> fileContents = getFileContents( u );
 								Enumeration< String > contents = fileContents.elements();
@@ -362,16 +377,19 @@ public class GOElitePlugin extends CytoscapePlugin
 							    
 								while( contents.hasMoreElements() )
 								{
+									
 									String line = ( String )contents.nextElement() ;
+									System.out.println( line );
 									Vector<String> columnsAsVector = new Vector< String >();
 									String [] columnsData = ( line ).split( "\t" ); 
 									
+									if ( columnsData.length < 2 ) { continue; } // ignore blank lines
+
 									if ( columnsData[ 2 ].contains( "MAPP" )) 
 									{
 										processingGONameResultsNotPathwayResults = false;
 									}
 									
-									if ( columnsData.length <= 1 ) { continue; } // ignore blank lines
 									
 									// is this a column header?
 									if ( processingGONameResultsNotPathwayResults && GONameResultsColumnNames.size() == 0 )
@@ -396,12 +414,16 @@ public class GOElitePlugin extends CytoscapePlugin
 									}
 								}
 								
+								System.out.println( "GO Name Column header:" + GONameResultsColumnNames.toString() );
+								System.out.println( "Pathway column header:" + pathwayResultsColumnNames.toString() );
+
 								// populate tables
 								JTable GONameResultsTable = new JTable( GONameResultsColumnData, GONameResultsColumnNames );
+								
 								JTable pathwayResultsTable = new JTable( pathwayResultsColumnData, pathwayResultsColumnNames );
 						    	CytoPanel cytoPanel = Cytoscape.getDesktop().getCytoPanel(SwingConstants.EAST);
-								cytoPanel.add( GONameResultsTable );
-								cytoPanel.add( pathwayResultsTable );
+								cytoPanel.add( "GO Name", GONameResultsTable );
+								cytoPanel.add( "Pathway", pathwayResultsTable );
 							} // for ... end 
 						} // if... end
 			    	}
