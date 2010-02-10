@@ -24,7 +24,7 @@
   	<property name="build.classes" value="${build.dir}/classes"/>
 
 	<property name="doc.dir" value="doc"/> 
-	<!-- <property name="pluginlib.dir" value="lib"/> -->
+	<property name="pluginlib.dir" value="lib"/> 
 	<property name="plugindata.dir" value="data"/>
 	
 	<!-- Global "magic" property for <javac> -->
@@ -42,11 +42,11 @@
 			<include name="*.jar"/>
 		</fileset>
 		
-		<!-- 
+		
 		<fileset dir="${pluginlib.dir}">
 			<include name="*.jar"/>
 		</fileset>
-		-->
+		
 
 	</path>
 
@@ -92,11 +92,11 @@
 	<!--  Create PlugIn Jar File (Unobfuscated) -->
    	<target name="jar" depends="compile" description="Creates PlugIn Jar File.">
 
-   		<!-- 
+   		
         <unjar dest="${build.classes}">
-         <fileset dir="${pluginlib.dir}"/>
+         <fileset dir="${pluginlib.dir}" includes="**/*.jar"/>
         </unjar>
-        -->
+        
 
       <jar destfile="${build.dir}/${plugin.name}.jar">
         <fileset dir="${build.classes}"/>
