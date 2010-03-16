@@ -8,7 +8,9 @@ import javax.xml.rpc.ServiceException;
 import edu.sdsc.nbcr.opal.types.*;
 import java.io.*;
 
+
 public class TestClient {
+	
 	public static byte[] getBytesFromFile(File file) throws IOException {
 	    InputStream is = new FileInputStream(file);
 	
