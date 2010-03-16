@@ -1,7 +1,15 @@
 package org.genmapp.goelite;
 
+import javax.swing.table.TableColumn;
 import java.awt.Dimension;
 import java.io.FileWriter;
+import javax.swing.BorderFactory; 
+import javax.swing.border.Border;
+import javax.swing.border.TitledBorder;
+import javax.swing.JPanel;
+import javax.swing.JTabbedPane;
+import javax.swing.JTextArea;
+import javax.swing.JScrollPane;
 import java.awt.event.ActionEvent;
 import java.awt.Toolkit;
 import java.awt.TextArea;
@@ -35,6 +43,7 @@ import java.net.URL;
 import edu.sdsc.nbcr.opal.*;
 import javax.swing.JButton;
 import javax.swing.JDialog;
+import javax.swing.JLabel;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JPanel;
@@ -161,14 +170,14 @@ public class GOElitePlugin extends CytoscapePlugin
 		            Tunable.LIST, new Integer(0),
 		            (Object) vSpecies, (Object) null, 0));
 		    layoutProperties.add( new Tunable( "input_denom_file", "Input denominator file",
-		    		Tunable.STRING, new String( "" ) ) );
+		    		Tunable.STRING, new String( "c:\\denom.txt" ) ) );
 		    layoutProperties.add( new Tunable( "input_gene_list_file", "Input gene list file",
-		    		Tunable.STRING, new String( "" ) ) );
+		    		Tunable.STRING, new String( "c:\\probesets.txt" ) ) );
 		    layoutProperties.add(new Tunable("gene_system", "Primary gene system",
 		            Tunable.LIST, new Integer(0),
 		            (Object) vGeneSystems, (Object) null, 0));
 		    layoutProperties.add( new Tunable( "num_permutations", "Number of permutations",
-		    		Tunable.INTEGER, new Integer( 2 ) ) );
+		    		Tunable.INTEGER, new Integer( 1 ) ) );
 		    layoutProperties.add( new Tunable( "go_pruning_algorithm", "GO pruning algorithm",
 		    		Tunable.LIST, new Integer( 0 ),
 		    		(Object) vPruningAlgorithms, (Object) null, 0 ) );
@@ -182,11 +191,11 @@ public class GOElitePlugin extends CytoscapePlugin
 		    JPanel panel = layoutProperties.getTunablePanel();
 		    add( panel );
 		    
-		    launchButton = new JButton( "Launch!" );		    
+		    launchButton = new JButton( "Run analysis" );		    
 		    panel.add( launchButton );
 		    launchButton.addActionListener( this );
 
-		    debugWindow = new TextArea( "Hi!", 5, 40 );
+		    debugWindow = new TextArea( "", 5, 40 );
 		    panel.add( debugWindow );
 		    panel.setSize( 350, 500 );
 		    panel.setVisible( true );
@@ -342,89 +351,121 @@ public class GOElitePlugin extends CytoscapePlugin
 	
 				    	// print results in results panel
 						StatusOutputType status = get();
-						if (status.getCode() == 8) {
+						if (status.getCode() == 8) 
+						{
 							JobOutputType outputs = service.getOutputs(jobID);
 							OutputFileType[] files = outputs.getOutputFile();
-							for (int i = 0; i < files.length; i++) {
-								URL u;
+							Vector< String > logFileContents = null; 
+						    Vector< String > GONameResultsColumnNames = new Vector< String >();
+						    Vector< String > pathwayResultsColumnNames = new Vector< String >();
+						    Vector< Vector > GONameResultsColumnData = new Vector< Vector >();
+						    Vector< Vector > pathwayResultsColumnData = new Vector< Vector >();
+							
+							// process each output file that's sitting on server
+							for (int i = 0; i < files.length; i++) 
+							{
+								URL u = null;
 								InputStream is = null;
 								DataInputStream dis;
 								String s;
 								System.out.println(files[i].getName());
 						    	debugWindow.append( files[i].getName() + "\n" );
-								if (files[i].getName().contains(
-										"GO-Elite_results")) {
+								if (files[i].getName().contains( "GO-Elite_results" ) ) 
+								{
 									// dig into the results folder to get the
 									// file we care about
 							    	debugWindow.append( "results found\n" );
 									u = new URL(
 											files[i].getUrl().toString()
 													+ "/pruned-results_z-score_elite.txt");
-								} else {
-									continue;
-								}							
-								System.out.println("Output URL: " + u);
-						    	debugWindow.append( "Output URL: " + u + "\n" );
-								
-								Vector<String> fileContents = getFileContents( u );
-								Enumeration< String > contents = fileContents.elements();
-								
-							    Vector< String > GONameResultsColumnNames = new Vector< String >();
-							    Vector< String > pathwayResultsColumnNames = new Vector< String >();
-							    Vector< Vector > GONameResultsColumnData = new Vector< Vector >();
-							    Vector< Vector > pathwayResultsColumnData = new Vector< Vector >();
-								boolean processingGONameResultsNotPathwayResults = true;
-							    
-								while( contents.hasMoreElements() )
+									
+							    	debugWindow.append( "Output URL: " + u + "\n" );
+									
+									Vector<String> fileContents = getFileContents( u );
+									Enumeration< String > contents = fileContents.elements();
+									
+									boolean processingGONameResultsNotPathwayResults = true;
+								    
+									while( contents.hasMoreElements() )
+									{
+										
+										String line = ( String )contents.nextElement() ;
+										System.out.println( line );
+										Vector<String> columnsAsVector = new Vector< String >();
+										String [] columnsData = ( line ).split( "\t" ); 
+										
+										if ( columnsData.length < 2 ) { continue; } // ignore blank lines
+
+										if ( columnsData[ 2 ].contains( "MAPP" )) 
+										{
+											processingGONameResultsNotPathwayResults = false;
+										}
+										
+										
+										// is this a column header?
+										if ( processingGONameResultsNotPathwayResults && GONameResultsColumnNames.size() == 0 )
+										{
+											GONameResultsColumnNames.addAll( Arrays.asList( columnsData ) );
+											continue;
+										}
+										else if ( !processingGONameResultsNotPathwayResults && pathwayResultsColumnNames.size() == 0 )
+										{
+											pathwayResultsColumnNames.addAll( Arrays.asList( columnsData ) );
+											continue;
+										}
+									
+										// it's a data line
+										if ( processingGONameResultsNotPathwayResults )
+										{
+											GONameResultsColumnData.add( new Vector< String >( Arrays.asList( columnsData ) ) );										
+										}
+										else
+										{
+											pathwayResultsColumnData.add( new Vector< String >( Arrays.asList( columnsData ) ) );										
+										}
+									}
+								} 
+								else if ( files[ i ].getName().contains( "GO-Elite_report.log" ) )
 								{
-									
-									String line = ( String )contents.nextElement() ;
-									System.out.println( line );
-									Vector<String> columnsAsVector = new Vector< String >();
-									String [] columnsData = ( line ).split( "\t" ); 
-									
-									if ( columnsData.length < 2 ) { continue; } // ignore blank lines
-
-									if ( columnsData[ 2 ].contains( "MAPP" )) 
-									{
-										processingGONameResultsNotPathwayResults = false;
-									}
-									
-									
-									// is this a column header?
-									if ( processingGONameResultsNotPathwayResults && GONameResultsColumnNames.size() == 0 )
-									{
-										GONameResultsColumnNames.addAll( Arrays.asList( columnsData ) );
-										continue;
-									}
-									else if ( !processingGONameResultsNotPathwayResults && pathwayResultsColumnNames.size() == 0 )
-									{
-										pathwayResultsColumnNames.addAll( Arrays.asList( columnsData ) );
-										continue;
-									}
-								
-									// it's a data line
-									if ( processingGONameResultsNotPathwayResults )
-									{
-										GONameResultsColumnData.add( new Vector< String >( Arrays.asList( columnsData ) ) );										
-									}
-									else
-									{
-										pathwayResultsColumnData.add( new Vector< String >( Arrays.asList( columnsData ) ) );										
-									}
+									logFileContents = getFileContents( new URL( files[ i ].getUrl().toString() ) );
+									continue;
+								}	
+								else
+								{
+									continue;
 								}
-								
-								System.out.println( "GO Name Column header:" + GONameResultsColumnNames.toString() );
-								System.out.println( "Pathway column header:" + pathwayResultsColumnNames.toString() );
+							} // ... end of "for"
 
-								// populate tables
-								JTable GONameResultsTable = new JTable( GONameResultsColumnData, GONameResultsColumnNames );
-								
-								JTable pathwayResultsTable = new JTable( pathwayResultsColumnData, pathwayResultsColumnNames );
-						    	CytoPanel cytoPanel = Cytoscape.getDesktop().getCytoPanel(SwingConstants.EAST);
-								cytoPanel.add( "GO Name", GONameResultsTable );
-								cytoPanel.add( "Pathway", pathwayResultsTable );
-							} // for ... end 
+							
+							// populate tables
+							CytoPanel cytoPanel = Cytoscape.getDesktop().getCytoPanel(SwingConstants.EAST);
+							
+					    	JTabbedPane resultsParentPanel = new JTabbedPane();						    	
+							JTable GONameResultsTable = new JTable( GONameResultsColumnData, GONameResultsColumnNames );
+							JTable pathwayResultsTable = new JTable( pathwayResultsColumnData, pathwayResultsColumnNames );
+							
+					    	// hide some columns
+					    	int [] GONameColumnsToHide = { 0, 1, 5, 6, 7, 11, 12, 13 };
+					    	int [] pathwayColumnsToHide = GONameColumnsToHide;  // hide the same columns
+					    	
+							for ( int j = GONameColumnsToHide.length - 1; j >= 0; j-- )
+							{
+								TableColumn column = GONameResultsTable.getColumnModel().getColumn( GONameColumnsToHide[ j ] );
+								debugWindow.append( "removing column: " + column );
+								GONameResultsTable.removeColumn( column );
+							}
+							for ( int j = pathwayColumnsToHide.length - 1; j >= 0; j-- )
+							{
+								TableColumn column = pathwayResultsTable.getColumnModel().getColumn( pathwayColumnsToHide[ j ] );
+								pathwayResultsTable.removeColumn( column );
+							}
+							
+					    	JTextArea logFileOutput = new JTextArea( ( logFileContents != null ? logFileContents.toString() : "Log file not found on server" ) );
+					    	resultsParentPanel.addTab( "GO", new JScrollPane( GONameResultsTable ) );
+							resultsParentPanel.addTab( "Pathway", new JScrollPane( pathwayResultsTable ) );
+							resultsParentPanel.addTab( "Log File", new JScrollPane( logFileOutput ) );
+							cytoPanel.add( "GO-Elite Outputs", resultsParentPanel );
+							
 						} // if... end
 			    	}
 					catch( Exception e )
