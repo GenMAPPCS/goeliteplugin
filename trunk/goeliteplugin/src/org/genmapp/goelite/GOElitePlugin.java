@@ -1,5 +1,11 @@
 package org.genmapp.goelite;
 
+import giny.model.Node;
+import java.util.List;
+import java.util.ArrayList;
+import cytoscape.CyNetwork;
+import cytoscape.Cytoscape;
+import cytoscape.data.CyAttributes;
 import javax.swing.table.TableColumn;
 import java.awt.Dimension;
 import java.io.FileWriter;
@@ -83,6 +89,59 @@ import edu.sdsc.nbcr.opal.types.StatusOutputType;
  */
 public class GOElitePlugin extends CytoscapePlugin 
 {	
+	// produces a probeset/denominator file that can be sent to the webservice for GO-Elite analysis
+	// if criteriaLabel is null, then use the combined OR of all criteria.
+	// criteriaSetName must not be null.
+	public static void generateInputFileFromCriteria( String pathToFile, String criteriaSetName, String criteriaLabel, 
+			CyNetwork network, TextArea debugWindow ) throws java.io.IOException
+	{
+		debugWindow.append( "1: network = " + network + "\n" );
+		FileWriter out = new FileWriter( pathToFile, false );
+		debugWindow.append( "2\n" );
+		out.write( "probeset\n" );
+		debugWindow.append( "3\n" );
+		
+		CyAttributes networkAttributes = Cytoscape.getNetworkAttributes();
+		ArrayList<String> availableCriteria = (ArrayList<String>) networkAttributes.getListAttribute(network.getIdentifier(), 
+				criteriaSetName );
+		ArrayList<String> criteriaToSearch = new ArrayList<String>();
+		if ( criteriaLabel != null && !criteriaToSearch.contains( criteriaLabel ) )
+		{
+			debugWindow.append( "criteria label/set not found\n" );
+			System.out.println( "Criteria Label " + criteriaLabel + " not found in criteriaSet " + criteriaSetName );
+			return;
+		}
+		if ( criteriaLabel == null )
+		{
+		  criteriaToSearch = availableCriteria;	
+		}
+		else
+		{
+			criteriaToSearch.add( criteriaLabel );
+		}
+		debugWindow.append( "criteria found\n" );
+		
+		for( int i = 0; i < criteriaToSearch.size(); i++ )
+		{
+			String thisCriteriaLabel = criteriaToSearch.get( i );
+			// get all nodes that pass the test
+			String nodeAttributeCriteriaLabel = criteriaSetName + "_" + thisCriteriaLabel;
+			List<Node> nodeList = network.nodesList();
+			CyAttributes nodeAttributes = Cytoscape.getNodeAttributes();
+
+			for(Node node: nodeList)
+	        {
+				if ( nodeAttributes.getBooleanAttribute( node.getIdentifier(), nodeAttributeCriteriaLabel ) )
+				{
+					debugWindow.append( node.getIdentifier() + " passed test\n" );
+					out.write( node.getIdentifier() + "\n" );
+				}
+	        }
+		}
+		out.close();
+		debugWindow.append( "done\n" );
+		
+	}
 	public static byte[] getBytesFromFile(File file) throws IOException {
 	    InputStream is = new FileInputStream(file);
 	
@@ -146,6 +205,7 @@ public class GOElitePlugin extends CytoscapePlugin
 	class GOEliteInputDialog extends JDialog implements ActionListener
 	{
 		JButton launchButton = null;
+		JButton generateInputFileButton = null;
 		TextArea debugWindow = null;
 		public final static long serialVersionUID = 0;
 		AppServicePortType service = null;
@@ -195,6 +255,10 @@ public class GOElitePlugin extends CytoscapePlugin
 		    panel.add( launchButton );
 		    launchButton.addActionListener( this );
 
+		    generateInputFileButton = new JButton( "Gen Input File" );
+		    panel.add( generateInputFileButton );
+		    generateInputFileButton.addActionListener( this );
+		    
 		    debugWindow = new TextArea( "", 5, 40 );
 		    panel.add( debugWindow );
 		    panel.setSize( 350, 500 );
@@ -202,8 +266,23 @@ public class GOElitePlugin extends CytoscapePlugin
 		}
 		public void actionPerformed( ActionEvent evt_ )
 		{
-			debugWindow.append( "evt source: " + evt_.getSource() );
-			//if ( evt_.getSource() != launchButton ) { return; }
+			debugWindow.append( "evt source: " + evt_.getSource() + "\n" );
+			debugWindow.append( "launchButton: " + launchButton + "\n" );
+			debugWindow.append( "genInputFileButton: " + generateInputFileButton + "\n" );
+			
+			if ( evt_.getSource() == generateInputFileButton ) 
+			{
+				try
+				{
+					debugWindow.append( "run generateInputFile...\n " );
+				    generateInputFileFromCriteria( "c:\\dummy.txt", "test", "gal1", Cytoscape.getCurrentNetwork(), debugWindow );
+				}
+				catch( IOException e )
+				{
+				}
+			}
+			
+			if ( evt_.getSource() != launchButton ){ debugWindow.append( "early return\n " ); return; }
 			
 			// The User just launched a job request
 			// spawn worker thread			
@@ -479,6 +558,8 @@ public class GOElitePlugin extends CytoscapePlugin
 			worker.execute();
 		}
 	}
+	
+	
 	// Handles the top-level menu selection event from Cytoscape
 	class GoElitePluginCommandListener implements ActionListener {
 		GOElitePlugin plugin = null;
@@ -490,8 +571,8 @@ public class GOElitePlugin extends CytoscapePlugin
 		{
 			  try
 			  {
-				  CyGOEliteClient client = new CyGOEliteClient( plugin );
-				  WebServiceClientManager.registerClient( client );
+				  //CyGOEliteClient client = new CyGOEliteClient( plugin );
+				  //WebServiceClientManager.registerClient( client );
 				  
 				  // pop up dialog
 				  GOEliteInputDialog dialog = new GOEliteInputDialog();
