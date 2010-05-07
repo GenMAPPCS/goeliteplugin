@@ -191,16 +191,71 @@ public class GOElitePlugin extends CytoscapePlugin
 	}
 	
 	public GOElitePlugin() 
-    { 
-      System.out.println( "GO Elite Plugin start" );
-	  JMenuItem item = new JMenuItem("Run GO-Elite");
-	  JMenu pluginMenu = Cytoscape.getDesktop().getCyMenus().getMenuBar().getMenu("Plugins");
-	  item.addActionListener(new GoElitePluginCommandListener( this ));
+	{ 
+		System.out.println( "GO Elite Plugin start" );
+		JMenuItem item = new JMenuItem("Run GO-Elite");
+		JMenu pluginMenu = Cytoscape.getDesktop().getCyMenus().getMenuBar().getMenu("Plugins");
+		item.addActionListener(new GoElitePluginCommandListener( this ));
 
-	  pluginMenu.add(item);
+		pluginMenu.add(item);
 
-	   
-    }
+		// LayoutProperties layoutProperties = initialize();
+		new GOEliteCommandHandler(layoutProperties);
+	
+	}
+
+	protected static final String GETDATA "get data";
+	protected static final String ID "id";
+	protected static final String LAUNCH "launch";
+	protected static final String OPENDIALOG "open dialog";
+	protected static final String STATUS "status";
+
+	class GOEliteCommandHandler extends AbstractCommandHandler {
+		public GOEliteCommandHandler(LayoutProperties props) {
+			super(CyCommandManager.reserveNamespace("goelite"));
+			// GETDATA:
+			//	get data id="id"
+			addDescription(GETDATA, "");
+			addArgument(GETDATA, ID);
+
+			// LAUNCH
+			addDescription(LAUNCH, "");
+			for (Tunable t: props) {
+				addArgument(LAUNCH, t);
+			}
+
+			// OPENDIALOG
+			addDescription(OPENDIALOG, "");
+			addArgument(OPENDIALOG);
+
+			// STATUS
+			addDescription(STATUS, "");
+			addArgument(STATUS, ID);
+		}
+
+		public CyCommandResult execute(String command, Collection<Tunable>args) throws CyCommandException {
+			CyCommandResult result = new CyCommandResult();
+			if (LAUNCH.equals(command)) {
+				// Launch
+				// Get id
+				results.addMessage("GOElite id = "+id);
+				results.addResult("id", id)
+			} else if (OPENDIALOG.equals(command)) {
+				GOEliteInputDialog dialog = new GOEliteInputDialog(props);
+				dialog.setVisible(true);
+			} else if (STATUS.equals(command)) {
+				String id = getArg(command, ID, args);
+			} else if (GETDATA.equals(command)) {
+				String id = getArg(command, ID, args);
+			}
+		}
+
+		public CyCommandResult execute(String command, Map<String, Object>args) throws CyCommandException {
+			return execute(command, createTunableCollection(args));
+		}
+
+		
+	}
 
 	class GOEliteInputDialog extends JDialog implements ActionListener
 	{
@@ -216,7 +271,7 @@ public class GOElitePlugin extends CytoscapePlugin
 		String vPruningAlgorithms[] = { new String( "z-score" ), new String( "gene number" ), 
 				new String( "combination" ) };
 		
-		public GOEliteInputDialog( )
+		public GOEliteInputDialog(LayoutProperties layoutProperties )
 		{
 	        layoutProperties = new LayoutProperties( "Go-elite" );
 
