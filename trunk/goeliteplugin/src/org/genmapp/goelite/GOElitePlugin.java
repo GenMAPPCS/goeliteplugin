@@ -3,6 +3,7 @@ package org.genmapp.goelite;
 import giny.model.Node;
 import java.util.List;
 import java.util.ArrayList;
+import cytoscape.layout.LayoutProperties;
 import cytoscape.CyNetwork;
 import cytoscape.Cytoscape;
 import cytoscape.data.CyAttributes;
@@ -17,6 +18,7 @@ import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
 import javax.swing.JScrollPane;
 import java.awt.event.ActionEvent;
+import java.awt.Color;
 import java.awt.Toolkit;
 import java.awt.TextArea;
 import edu.sdsc.nbcr.opal.types.InputFileType;
@@ -27,11 +29,13 @@ import edu.sdsc.nbcr.opal.types.OutputFileType;
 import edu.sdsc.nbcr.opal.types.StatusOutputType;
 import java.awt.event.ActionListener;
 import java.io.BufferedInputStream;
+import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PrintWriter;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -42,17 +46,24 @@ import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import edu.sdsc.nbcr.opal.*;
+
+import javax.swing.BoxLayout;
+import javax.swing.ButtonGroup;
 import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JDialog;
+import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JPanel;
+import javax.swing.JRadioButton;
 import javax.swing.JTable;
 import javax.swing.SwingConstants;
 import org.jdesktop.swingworker.SwingWorker;  // Part of JDK 1.6, use backported version for now
@@ -89,59 +100,123 @@ import edu.sdsc.nbcr.opal.types.StatusOutputType;
  */
 public class GOElitePlugin extends CytoscapePlugin 
 {	
-	// produces a probeset/denominator file that can be sent to the webservice for GO-Elite analysis
-	// if criteriaLabel is null, then use the combined OR of all criteria.
-	// criteriaSetName must not be null.
-	public static void generateInputFileFromCriteria( String pathToFile, String criteriaSetName, String criteriaLabel, 
-			CyNetwork network, TextArea debugWindow ) throws java.io.IOException
+	static boolean bResultsMasterPanelAlreadyAdded = false;  // used for results panel in Cytoscape window
+	CloseableTabbedPane resultsMasterPanel = null;
+	
+	public long countLinesInFile( String filename )
 	{
-		debugWindow.append( "1: network = " + network + "\n" );
-		FileWriter out = new FileWriter( pathToFile, false );
-		debugWindow.append( "2\n" );
-		out.write( "probeset\n" );
-		debugWindow.append( "3\n" );
-		
-		CyAttributes networkAttributes = Cytoscape.getNetworkAttributes();
-		ArrayList<String> availableCriteria = (ArrayList<String>) networkAttributes.getListAttribute(network.getIdentifier(), 
-				criteriaSetName );
-		ArrayList<String> criteriaToSearch = new ArrayList<String>();
-		if ( criteriaLabel != null && !criteriaToSearch.contains( criteriaLabel ) )
+	    // Count the number of lines in the specified file, and
+	    // print the number to standard output.  If an error occurs
+	    // while processing the file, print an error message instead.
+	    // Two try...catch statements are used so I can give a
+	    // different error message in each case.
+		long lineCount = 0;
+		try
 		{
-			debugWindow.append( "criteria label/set not found\n" );
-			System.out.println( "Criteria Label " + criteriaLabel + " not found in criteriaSet " + criteriaSetName );
-			return;
+			BufferedReader br = new BufferedReader(new FileReader( filename ) );
+			String line = "";
+			while ((  line = br.readLine()) != null) {
+		        lineCount++;
+			}
 		}
-		if ( criteriaLabel == null )
+		catch( Exception e )
 		{
-		  criteriaToSearch = availableCriteria;	
+			return( -1 );
 		}
-		else
-		{
-			criteriaToSearch.add( criteriaLabel );
-		}
-		debugWindow.append( "criteria found\n" );
-		
-		for( int i = 0; i < criteriaToSearch.size(); i++ )
-		{
-			String thisCriteriaLabel = criteriaToSearch.get( i );
-			// get all nodes that pass the test
-			String nodeAttributeCriteriaLabel = criteriaSetName + "_" + thisCriteriaLabel;
-			List<Node> nodeList = network.nodesList();
-			CyAttributes nodeAttributes = Cytoscape.getNodeAttributes();
+		return( lineCount );
+   }  // end countLines()
 
-			for(Node node: nodeList)
-	        {
-				if ( nodeAttributes.getBooleanAttribute( node.getIdentifier(), nodeAttributeCriteriaLabel ) )
-				{
-					debugWindow.append( node.getIdentifier() + " passed test\n" );
-					out.write( node.getIdentifier() + "\n" );
+	public String [] getCriteriaSets( CyNetwork network, TextArea debugWindow )
+	{
+		CyAttributes networkAttributes = Cytoscape.getNetworkAttributes();
+		String[] a = {""};
+		
+	 	debugWindow.append( "getCriteriaSets start for network " + network.getIdentifier() );
+	 	debugWindow.append( "cyattributes " + networkAttributes.getAttributeNames().length );
+		if ( networkAttributes.hasAttribute(network.getIdentifier(),
+					"__criteria")) {
+				debugWindow.append( "__criteria found");
+				ArrayList<String> temp = (ArrayList<String>) networkAttributes
+						.getListAttribute(network.getIdentifier(), "__criteria");
+				ArrayList<String> full = new ArrayList<String>();
+				for (String s : temp) {
+					full.add(s);
 				}
-	        }
+				debugWindow.append( "a found " + a.length );
+				return full.toArray(a);
+			
+				}
+		debugWindow.append( "getCriteriaSets end (" + a.length + ")" );
+		return( a );
+	}
+	// for a given criteriaSet, return its criteria
+	public String [] getCriteria( String criteriaSet, CyNetwork network, TextArea debugWindow )
+	{
+		ArrayList<String> criteriaNames = new ArrayList<String>();
+		criteriaNames.add( "-all-" );
+		CyAttributes networkAttributes = Cytoscape.getNetworkAttributes();
+		ArrayList<String> temp = ((ArrayList<String>) networkAttributes.getListAttribute( network.getIdentifier(), criteriaSet ) );
+		debugWindow.append( "criteria for " + criteriaSet + " found " + temp.size() );
+		
+		// split first on "comma", then on ":"
+		boolean isFirst = true;
+		for ( String criterion : temp )	
+		{
+			// skip the first entry, it's not actually a criterion
+			if ( isFirst ) { isFirst = false; continue; }
+			
+			String[] tokens = criterion.split( ":" );
+			debugWindow.append( "tokens[1]: " + tokens[ 1 ] );
+			criteriaNames.add( tokens[ 1 ] );
 		}
+		return( ( String [] ) criteriaNames.toArray ( new String [ criteriaNames.size() ] ) );
+	}
+	
+	// produces a probeset/denominator file that can be sent to the webservice for GO-Elite analysis
+	// if criteriaSetName = "", then write all nodes in network
+	public static void generateInputFileFromNetworkCriteria( String pathToFile, String criteriaSetName, 
+			String criteriaLabel, boolean bAcceptTrueValuesOnly,
+			TextArea debugWindow ) throws java.io.IOException
+	{
+		FileWriter fw = new FileWriter( pathToFile, false );
+		debugWindow.append( "filewriter opened\n" );
+		PrintWriter out = new PrintWriter( fw );
+		debugWindow.append( "2\n" );
+
+		out.write( pathToFile );
+		debugWindow.append( "3\n" );
+		out.println();
+		debugWindow.append( "4\n" );
+		
+		/// for every node, 
+		// get all nodes that pass the test
+		String nodeAttributeCriteriaLabel = criteriaSetName + "_" + criteriaLabel;
+		List<Node> nodeList = Cytoscape.getCyNodesList();
+		CyAttributes nodeAttributes = Cytoscape.getNodeAttributes();
+
+		for(Node node: nodeList)
+	    {
+			boolean value = false;
+			if ( criteriaSetName.compareTo("") == 0 ||
+				( value = nodeAttributes.getBooleanAttribute( node.getIdentifier(), nodeAttributeCriteriaLabel ) ) )
+			{
+				if ( !bAcceptTrueValuesOnly || value )
+				{
+					debugWindow.append( "writing node\n" );
+
+					out.write( node.getIdentifier() );
+					out.println( );
+				}
+			}
+	    }
 		out.close();
-		debugWindow.append( "done\n" );
+		debugWindow.append( "done writing input file\n" );
 		
 	}
+
+
+	
+	
 	public static byte[] getBytesFromFile(File file) throws IOException {
 	    InputStream is = new FileInputStream(file);
 	
@@ -196,14 +271,13 @@ public class GOElitePlugin extends CytoscapePlugin
 		JMenuItem item = new JMenuItem("Run GO-Elite");
 		JMenu pluginMenu = Cytoscape.getDesktop().getCyMenus().getMenuBar().getMenu("Plugins");
 		item.addActionListener(new GoElitePluginCommandListener( this ));
-
 		pluginMenu.add(item);
 
 		// LayoutProperties layoutProperties = initialize();
-		new GOEliteCommandHandler(layoutProperties);
+		//new GOEliteCommandHandler(layoutProperties);
 	
 	}
-
+/*
 	protected static final String GETDATA "get data";
 	protected static final String ID "id";
 	protected static final String LAUNCH "launch";
@@ -256,7 +330,7 @@ public class GOElitePlugin extends CytoscapePlugin
 
 		
 	}
-
+*/
 	class GOEliteInputDialog extends JDialog implements ActionListener
 	{
 		JButton launchButton = null;
@@ -270,24 +344,22 @@ public class GOElitePlugin extends CytoscapePlugin
 		String vGeneSystems[] = { new String( "Ensembl" ), new String( "EntrezGene" ) };
 		String vPruningAlgorithms[] = { new String( "z-score" ), new String( "gene number" ), 
 				new String( "combination" ) };
+		JLabel inputDenomFilenameDescriptor = null, inputNumeratorFilenameDescriptor = null;
+		JLabel inputDenomFilenameLabel, inputNumeratorFilenameLabel;
+    	JTextArea inputNumerFileTextArea= null, inputDenomFileTextArea = null;
+    	JButton inputNumerFileBrowseButton = null, inputDenomFileBrowseButton = null;
+    	JComboBox inputCriteriaSetComboBox = null, inputCriteriaComboBox = null;
+    	boolean bIsInputAFile = true;
+
 		
-		public GOEliteInputDialog(LayoutProperties layoutProperties )
+		//public GOEliteInputDialog(LayoutProperties layoutProperties )
+    	public GOEliteInputDialog()
 		{
 	        layoutProperties = new LayoutProperties( "Go-elite" );
 
-	        // XXX - Not supported by webservice
-		    //layoutProperties.add( new Tunable("group", "group",
-		    //		Tunable.GROUP, new Integer( 10 ) ) );
-		    //layoutProperties.add(new Tunable("num_cpus", "Number of CPUs",
-		    //       Tunable.INTEGER, new Integer( 1 ) ) );
-
 		    layoutProperties.add(new Tunable("species", "Species to analyze",
 		            Tunable.LIST, new Integer(0),
-		            (Object) vSpecies, (Object) null, 0));
-		    layoutProperties.add( new Tunable( "input_denom_file", "Input denominator file",
-		    		Tunable.STRING, new String( "c:\\denom.txt" ) ) );
-		    layoutProperties.add( new Tunable( "input_gene_list_file", "Input gene list file",
-		    		Tunable.STRING, new String( "c:\\probesets.txt" ) ) );
+		            (Object) vSpecies, (Object) null, 0)); 
 		    layoutProperties.add(new Tunable("gene_system", "Primary gene system",
 		            Tunable.LIST, new Integer(0),
 		            (Object) vGeneSystems, (Object) null, 0));
@@ -303,21 +375,135 @@ public class GOElitePlugin extends CytoscapePlugin
 		    layoutProperties.add(new Tunable("min_num_genes_changed", "Minimum number of genes changed",
 		            Tunable.INTEGER, new Integer( 3 ) ) );
 
-		    JPanel panel = layoutProperties.getTunablePanel();
-		    add( panel );
+		    final JPanel panel = layoutProperties.getTunablePanel();
+
+		    JPanel inputSourcePanel = new JPanel( );
+		    inputSourcePanel.add( new JLabel( "Input Source " ) );
 		    
+		    ButtonGroup inputButtonsGroup = new ButtonGroup();
+		    final JRadioButton inputSourceFileRadioButton = new JRadioButton( "File" );
+		    final JRadioButton inputSourceCriteriaRadioButton = new JRadioButton( "Criteria" );
+		    inputSourcePanel.add( inputSourceFileRadioButton );
+		    inputSourcePanel.add( inputSourceCriteriaRadioButton );
+		    inputButtonsGroup.add( inputSourceFileRadioButton );
+		    inputButtonsGroup.add( inputSourceCriteriaRadioButton );
+		    final JPanel inputSourceExpandingPanel = new JPanel();
+    		inputSourceExpandingPanel.setLayout( new BoxLayout( inputSourceExpandingPanel, BoxLayout.PAGE_AXIS ) );
+
+		    inputSourceExpandingPanel.setSize( 500, 500 );
+		    inputSourcePanel.add( inputSourceExpandingPanel );
+		    
+		    ActionListener inputSourceActionListener = new ActionListener()
+		    {
+		    	public boolean isInputAFile() { return( bIsInputAFile ); }
+		    	public void actionPerformed( ActionEvent e )
+		    	{
+		    		if ( e.getSource() == inputSourceFileRadioButton )
+		    		{
+		    			bIsInputAFile = true;
+		    			inputSourceExpandingPanel.removeAll();
+		    			inputNumeratorFilenameDescriptor = new JLabel( "Numerator" );
+		    			inputSourceExpandingPanel.add( inputNumeratorFilenameDescriptor);
+		    			inputNumerFileTextArea = new JTextArea( "" );
+		    			inputSourceExpandingPanel.add( inputNumerFileTextArea );
+		    			inputNumerFileBrowseButton = new JButton( "Browse..." );
+		    			inputSourceExpandingPanel.add( inputNumerFileBrowseButton );
+		    			
+		    			inputDenomFilenameDescriptor = new JLabel( "Denominator" );
+		    			inputSourceExpandingPanel.add( inputDenomFilenameDescriptor );
+		    			inputDenomFileTextArea = new JTextArea( "" );
+		    			inputSourceExpandingPanel.add( inputDenomFileTextArea );
+		    			inputDenomFileBrowseButton = new JButton( "Browse..." );
+		    			inputSourceExpandingPanel.add( inputDenomFileBrowseButton );
+		    			
+		    			inputNumerFileBrowseButton.addActionListener( this );
+		    			inputDenomFileBrowseButton.addActionListener( this );
+		    		}
+		    		else if ( e.getSource() == inputSourceCriteriaRadioButton )
+		    		{
+		    			bIsInputAFile = false;
+		    			inputSourceExpandingPanel.removeAll();
+		    			String [] criteriaSet = getCriteriaSets( Cytoscape.getCurrentNetwork(), debugWindow );
+		    			String [] criteria = {};
+		    			
+		    			inputSourceExpandingPanel.add( new JLabel( "Criteria set" ) );
+		    			inputCriteriaSetComboBox = new JComboBox( criteriaSet );
+		    			inputSourceExpandingPanel.add( inputCriteriaSetComboBox );
+		    			inputCriteriaComboBox = new JComboBox( criteria );
+		    			inputSourceExpandingPanel.add( new JLabel( "Criteria" ) );
+		    			inputSourceExpandingPanel.add( inputCriteriaComboBox );
+		    			inputCriteriaSetComboBox.addActionListener( this );
+		    			
+		    			
+		    		}
+		    		else if ( e.getSource() == inputNumerFileBrowseButton || e.getSource() == inputDenomFileBrowseButton )
+		    		{
+		    			 JFileChooser chooser = new JFileChooser();
+		    			 int returnVal = chooser.showOpenDialog( panel );
+		    			 
+		    			 if( returnVal == JFileChooser.APPROVE_OPTION ) 
+		    			 {
+		    				 try
+		    				 {
+			    				 if ( e.getSource() == inputNumerFileBrowseButton )
+			    				 {
+			    					 String filePath = chooser.getSelectedFile().getCanonicalPath();
+			    					 inputNumerFileTextArea.setText( filePath );
+			    					 inputNumeratorFilenameDescriptor.setText( "Numerator: (" + countLinesInFile( filePath ) + ")" );
+			    				 }
+			    				 else
+			    				 {
+			    					 String filePath = chooser.getSelectedFile().getCanonicalPath(); 
+			    					 inputDenomFileTextArea.setText( filePath );
+			    					 inputDenomFilenameDescriptor.setText( "Denominator: (" + countLinesInFile( filePath ) + ")" );
+			    				 }
+		    				 }
+		    				 catch( java.io.IOException exception )
+		    				 {
+		    			
+		    				 }
+		    			 }	    			 
+		    		}
+		    		else if ( e.getSource() == inputCriteriaSetComboBox )
+		    		{
+		    			// based on selection, update criteria choices
+		    			String [] newCriteria = getCriteria( (String) inputCriteriaSetComboBox.getSelectedItem(), Cytoscape.getCurrentNetwork(), debugWindow );
+		    			inputCriteriaComboBox.removeAllItems();
+		    			for ( int i = 0; i < newCriteria.length; i++ )
+		    			{
+		    				inputCriteriaComboBox.addItem( newCriteria[ i ] );
+		    			}
+		    		}
+		    		else if ( e.getSource() == inputCriteriaComboBox )
+		    		{
+		    			
+		    		}
+		    		panel.revalidate();
+		    	}
+		    };
+		    inputSourceFileRadioButton.addActionListener( inputSourceActionListener );
+		    inputSourceCriteriaRadioButton.addActionListener( inputSourceActionListener );
+		    inputSourceFileRadioButton.setSelected( true );
+		    
+		    // invoke action to update panels
+		    inputSourceActionListener.actionPerformed( new ActionEvent( inputSourceFileRadioButton, 0, null ) );
+		    panel.add( inputSourcePanel );
+
 		    launchButton = new JButton( "Run analysis" );		    
 		    panel.add( launchButton );
 		    launchButton.addActionListener( this );
 
-		    generateInputFileButton = new JButton( "Gen Input File" );
+		    generateInputFileButton = new JButton( "Generate Input File" );
 		    panel.add( generateInputFileButton );
 		    generateInputFileButton.addActionListener( this );
 		    
 		    debugWindow = new TextArea( "", 5, 40 );
 		    panel.add( debugWindow );
-		    panel.setSize( 350, 500 );
+		    panel.setSize( 750, 2000 );
 		    panel.setVisible( true );
+
+		    add( panel );
+		    
 		}
 		public void actionPerformed( ActionEvent evt_ )
 		{
@@ -330,26 +516,30 @@ public class GOElitePlugin extends CytoscapePlugin
 				try
 				{
 					debugWindow.append( "run generateInputFile...\n " );
-				    generateInputFileFromCriteria( "c:\\dummy.txt", "test", "gal1", Cytoscape.getCurrentNetwork(), debugWindow );
+				    generateInputFileFromNetworkCriteria( "c:\\dummy\\dummy.txt", "test", "gal1", true, debugWindow );
 				}
-				catch( IOException e )
+				catch( Exception e )
 				{
 				}
 			}
 			
 			if ( evt_.getSource() != launchButton ){ debugWindow.append( "early return\n " ); return; }
 			
+			debugWindow.append( "launched a job request ");
 			// The User just launched a job request
 			// spawn worker thread			
 			SwingWorker<StatusOutputType, Void> worker = new SwingWorker<StatusOutputType, Void>() 
 			{
 				edu.sdsc.nbcr.opal.types.StatusOutputType status = null;
-					    @Override
+				JTabbedPane resultsParentPanel = null; 
+				TextArea statusWindow = null; 
+				
 			    public StatusOutputType doInBackground() 
 			    {
 					// fire off webservice request
 			    	try
 			    	{
+							
 					    AppServiceLocator findService = new AppServiceLocator();
 					    System.out.println( "" + findService );
 					    findService.setAppServicePortEndpointAddress(
@@ -365,18 +555,47 @@ public class GOElitePlugin extends CytoscapePlugin
 		
 					    layoutProperties.updateValues();  // must do this to refresh contents of the Tunables before we read from them
 					    
-	
-					    // Process the gene list file
-					    String geneListFilePath = layoutProperties.getValue( "input_gene_list_file" );
-					    System.out.println( "file: " + geneListFilePath );
-						File geneListFile = new File( geneListFilePath ); 
-					    System.out.println( "2" );
+					    // prepare input files
+					    String geneListFilePath = "";
+					    String denomFilePath = "";
+					    
+					    if ( !bIsInputAFile )
+					    {
+						    // if critera selected, generate files first
+					    	geneListFilePath = "c:\\dummy\\cyGenNum.txt";
+					    	    
+						    debugWindow.append( "generating input numerator\n" );
+					    	generateInputFileFromNetworkCriteria( geneListFilePath,  
+					    		(String) inputCriteriaSetComboBox.getSelectedItem(), (String) inputCriteriaComboBox.getSelectedItem(), 
+								true, debugWindow );
+					    	
+						    debugWindow.append( "generating input denominator\n" );
+					    	denomFilePath = "c:\\dummy\\cyGenDenom.txt";
+					    	generateInputFileFromNetworkCriteria( denomFilePath, 
+					    			(String) inputCriteriaSetComboBox.getSelectedItem(), (String) inputCriteriaComboBox.getSelectedItem(), 
+									false, debugWindow );
+					    }
+					    else
+					    {
+					    	geneListFilePath = inputNumerFileTextArea.getText();
+					    	
+					    	denomFilePath = inputDenomFileTextArea.getText();
+					    }
+					    debugWindow.append( "2>" + service  + "\n" );
+					    
+					    // 
+					    // *** Parse dialog box inputs
+					    // Process the gene list file					    
+					    
+					    debugWindow.append( "numer file: " + geneListFilePath );
+					    File geneListFile = new File( geneListFilePath ); 
 					    InputFileType geneListOpalFile = new InputFileType();			    
 						geneListOpalFile.setName( geneListFile.getName() );  	// extract the name portion of the full path
 					    byte[] geneListFileBytes = getBytesFromFile( geneListFile );
 					    geneListOpalFile.setContents( replaceCR( geneListFileBytes ) );
+					    debugWindow.append( "2> geneListFileBytes ( total size ): " + geneListFileBytes.length + "\n" );
 					    					    
-					    String denomFilePath = layoutProperties.getValue( "input_denom_file" );
+					    debugWindow.append( "denom file: " + denomFilePath );
 					    System.out.println( "file: " + denomFilePath );
 						File denomFile = new File( denomFilePath ); 
 						System.out.println( "2" );
@@ -384,8 +603,35 @@ public class GOElitePlugin extends CytoscapePlugin
 					    System.out.println( denomFile.getName() );
 						denomOpalFile.setName( denomFile.getName() );  	// extract the name portion of the full path
 					    byte[] denomFileBytes = getBytesFromFile( denomFile );
+					    debugWindow.append( "2> denomFileBytes ( total size ): " + denomFileBytes.length + "\n" );
 					    denomOpalFile.setContents( replaceCR( denomFileBytes ) );
-					    
+
+					    // **** Prepare results pane / status window
+			    		statusWindow = new TextArea( 80, 80 );
+			    		CytoPanel cytoPanel = Cytoscape.getDesktop().getCytoPanel(SwingConstants.EAST);
+
+			    		if ( resultsMasterPanel == null )
+			    		{
+			    			resultsMasterPanel = new CloseableTabbedPane();
+			    		}
+			    		resultsParentPanel = new JTabbedPane();
+			    		
+			    		JPanel statusPanel = new JPanel();
+			    		statusPanel.setLayout(new BoxLayout(statusPanel, BoxLayout.PAGE_AXIS ) );
+			    		JLabel jobUrlLabel = new JLabel( "Job Server Url:" );
+			    		statusPanel.add( jobUrlLabel );
+			    		statusPanel.add( new JScrollPane( statusWindow ) );
+			    		resultsParentPanel.addTab( "Status", statusPanel );
+			    		resultsMasterPanel.addTab( geneListFilePath, resultsParentPanel );
+			    		if ( !bResultsMasterPanelAlreadyAdded )
+			    		{ 
+			    			cytoPanel.add( "GO-Elite Results", resultsMasterPanel );
+			    			bResultsMasterPanelAlreadyAdded = true;
+			    		}
+			    		// CytoPanel -> resultsMasterPanel "GO-Elite Results" -> 
+			    		//   resultsParentPanel "Status", "Pathway", "GO"
+
+			    		// *** Launch webservice
 					    // web service arguments are sent in as one long string
 					    // Example: "--species Mm --denom denom.txt --input probesets.txt --mod EntrezGene 
 					    //   --permutations 2 --method z-score --pval 0.05 --num 3"
@@ -402,21 +648,27 @@ public class GOElitePlugin extends CytoscapePlugin
 					    debugWindow.append( "argList" + argList + "\n" );
 					    launchJobInput.setArgList( argList );
 					    
+					    // *** Wait for results, update running status
 					    InputFileType[] list = {geneListOpalFile, denomOpalFile};
 					    launchJobInput.setInputFile( list );
 					    JobSubOutputType output = service.launchJob(launchJobInput);
 					    
 					    jobID = output.getJobID();
 					    System.out.println( "Job: " + jobID );
-					    debugWindow.append( "Job: " + jobID  + "\n" );
-
+					    statusWindow.append( "Job: " + jobID  + "\n" );
+					    String serverUrl = "http://webservices.rbvi.ucsf.edu:8080/";
+					    // http://webservices.rbvi.ucsf.edu:8080/app1264053146113/
+					    jobUrlLabel.setText( "Job Server Url: " + serverUrl + jobID );
+					    jobUrlLabel.repaint();
+					    
 					    // 8 is the code for completion
 				    	while( status == null || 8 != status.getCode() )
 				    	{
 				    		Thread.sleep( 5000 );
 				    		status = service.queryStatus( output.getJobID() );
 				    		System.out.println( "[" + status.getCode() + "] " + status.getMessage() ); 
-				    		debugWindow.append( "[" + status.getCode() + "] " + status.getMessage() + "\n" );
+				    		statusWindow.append( "[" + status.getCode() + "] " + status.getMessage() + "\n" );
+				    		statusWindow.repaint();
 				    	 }
 			    	}
 			    	catch( Exception e )
@@ -574,7 +826,6 @@ public class GOElitePlugin extends CytoscapePlugin
 							// populate tables
 							CytoPanel cytoPanel = Cytoscape.getDesktop().getCytoPanel(SwingConstants.EAST);
 							
-					    	JTabbedPane resultsParentPanel = new JTabbedPane();						    	
 							JTable GONameResultsTable = new JTable( GONameResultsColumnData, GONameResultsColumnNames );
 							JTable pathwayResultsTable = new JTable( pathwayResultsColumnData, pathwayResultsColumnNames );
 							
@@ -594,11 +845,14 @@ public class GOElitePlugin extends CytoscapePlugin
 								pathwayResultsTable.removeColumn( column );
 							}
 							
-					    	JTextArea logFileOutput = new JTextArea( ( logFileContents != null ? logFileContents.toString() : "Log file not found on server" ) );
+							for ( int j = 0; j < logFileContents.size(); j++ )
+							{
+								statusWindow.append( logFileContents.elementAt( j ) + "\n" );
+							}
+							
 					    	resultsParentPanel.addTab( "GO", new JScrollPane( GONameResultsTable ) );
 							resultsParentPanel.addTab( "Pathway", new JScrollPane( pathwayResultsTable ) );
-							resultsParentPanel.addTab( "Log File", new JScrollPane( logFileOutput ) );
-							cytoPanel.add( "GO-Elite Outputs", resultsParentPanel );
+						
 							
 						} // if... end
 			    	}
@@ -631,7 +885,7 @@ public class GOElitePlugin extends CytoscapePlugin
 				  
 				  // pop up dialog
 				  GOEliteInputDialog dialog = new GOEliteInputDialog();
-				  dialog.setSize( new Dimension( 300, 300 ) );
+				  dialog.setSize( new Dimension( 350, 500 ) );
 				  dialog.setVisible( true );
 		      }
 		      catch( Exception e )
@@ -641,5 +895,6 @@ public class GOElitePlugin extends CytoscapePlugin
 		      
 		}		  
 	}
+
 }
 
