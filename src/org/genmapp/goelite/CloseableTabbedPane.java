@@ -30,6 +30,7 @@ import java.awt.event.*;
 
 public class CloseableTabbedPane extends JTabbedPane implements MouseListener 
 {
+	  int test = 0;
 	  public CloseableTabbedPane() {
 	    super();
 	    addMouseListener(this);
