@@ -106,7 +106,7 @@ public class InputDialog extends JDialog implements ActionListener {
 			new String("Ensembl"), new String("Ensembl") };
 	// Code for input files
 	static String vGeneSystemCodes[] = { new String("En"), new String("L"),
-			new String("D"), new String("En"), new String("X") };
+			new String("D"), new String("Tb"), new String("X") };
 	static String vPruningAlgorithms[] = { new String("z-score"),
 			new String("gene number"), new String("combination") };
 	static String vAnalysisType[] = { new String("both"),
