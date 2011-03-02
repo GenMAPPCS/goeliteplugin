@@ -2,6 +2,7 @@ package org.genmapp.goelite;
 
 import java.io.File;
 import java.net.URL;
+import java.rmi.RemoteException;
 import java.util.Map;
 import java.util.Vector;
 
@@ -9,6 +10,7 @@ import javax.swing.JTextArea;
 
 import edu.sdsc.nbcr.opal.AppServiceLocator;
 import edu.sdsc.nbcr.opal.AppServicePortType;
+import edu.sdsc.nbcr.opal.types.FaultType;
 import edu.sdsc.nbcr.opal.types.InputFileType;
 import edu.sdsc.nbcr.opal.types.JobInputType;
 import edu.sdsc.nbcr.opal.types.JobOutputType;
@@ -54,13 +56,12 @@ class WebService {
 
 		return( l );
 	}
+	static String APP_SERVICE_URL = "http://webservices.cgl.ucsf.edu/opal/services/GOEliteService";
 	public static AppServicePortType getService()
 			throws javax.xml.rpc.ServiceException {
-		// We could share the AppServicePortType object amongst multiple
-		// requests but KISS for now
 		AppServiceLocator findService = new AppServiceLocator();
 		findService
-				.setAppServicePortEndpointAddress("http://webservices.cgl.ucsf.edu/opal/services/GOEliteService");
+				.setAppServicePortEndpointAddress( APP_SERVICE_URL );
 
 		AppServicePortType service = findService.getAppServicePort();
 		return (service);
@@ -81,6 +82,7 @@ class WebService {
 			if (service == null) {
 				service = getService();
 			}
+			
 			statusWindow.append("service found = " + service + "\n");
 			
 			// *** Parse dialog box inputs
@@ -143,9 +145,20 @@ class WebService {
 			JobSubOutputType output = service.launchJob(launchJobInput);
 
 			return (output.getJobID());
-		} catch (Exception e) {
-			statusWindow.append( "Exception thrown: " + e.getMessage() );
-			return (null);
+		} catch (javax.xml.rpc.ServiceException e) {
+			statusWindow.append( "Could not connect to service at " + APP_SERVICE_URL +  " : " + e.getMessage() );
+			
+			return (null);			
+		} catch (FaultType e) {
+			statusWindow.append( "Error during job launch/communication with webservice: " + e.getMessage() );
+			return( null );
+		} catch( RemoteException e ) {
+			statusWindow.append( "Error during job launch/communication with webservice: " + e.getMessage() );
+			return( null );
+		} catch( java.io.IOException e ) {
+			statusWindow.append( "Could not convert input data files to webservice-compatible format: " + e.getMessage() );
+			
+			return( null );
 		}
 	}
 

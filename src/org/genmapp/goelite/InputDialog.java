@@ -1,5 +1,7 @@
 package org.genmapp.goelite;
 
+
+import javax.swing.JOptionPane;
 import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.Dimension;
@@ -154,7 +156,12 @@ public class InputDialog extends JDialog implements ActionListener {
 		try {
 			lines = Utilities.getFileContents(new URL(bridgedbSpecieslist));
 		} catch (java.net.MalformedURLException e) {
+			Utilities.showError( "Malformed URL in species list", e );
+			return;
+
 		} catch (java.io.IOException e) {
+			Utilities.showError( "Could not retrieve species list from URL", e );
+			return;
 		}
 		int idx = 0;
 		int defaultSpeciesIdx = 0;
@@ -330,28 +337,33 @@ public class InputDialog extends JDialog implements ActionListener {
 							if (e.getSource() == inputNumerFileBrowseButton) {
 								String filePath = chooser.getSelectedFile()
 										.getCanonicalPath();
-								inputNumerFileJTextArea.setText(filePath);
-								inputNumerFileJTextArea.setColumns(20);
-								inputNumeratorFilenameDescriptor
-										.setText("Numerator: ("
-												+ Utilities
-														.countLinesInFile(filePath)
-												+ ")");
-								inputNumeratorFilenameDescriptor
-										.setAlignmentX(Component.CENTER_ALIGNMENT);
-
+								if (new File(filePath).exists() )
+								{
+									inputNumerFileJTextArea.setText(filePath);
+									inputNumerFileJTextArea.setColumns(20);
+									inputNumeratorFilenameDescriptor
+											.setText("Numerator: ("
+													+ Utilities
+															.countLinesInFile(filePath)
+													+ ")");
+									inputNumeratorFilenameDescriptor
+											.setAlignmentX(Component.CENTER_ALIGNMENT);
+								}
 							} else {
 								String filePath = chooser.getSelectedFile()
 										.getCanonicalPath();
-								inputDenomFileJTextArea.setText(filePath);
-								inputDenomFileJTextArea.setColumns(20);
-								inputDenomFilenameDescriptor
-										.setText("Denominator: ("
-												+ Utilities
-														.countLinesInFile(filePath)
-												+ ")");
-								inputDenomFilenameDescriptor
-										.setAlignmentX(Component.CENTER_ALIGNMENT);
+								if (new File( filePath ).exists() )
+								{
+									inputDenomFileJTextArea.setText(filePath);
+									inputDenomFileJTextArea.setColumns(20);
+									inputDenomFilenameDescriptor
+											.setText("Denominator: ("
+													+ Utilities
+															.countLinesInFile(filePath)
+													+ ")");
+									inputDenomFilenameDescriptor
+											.setAlignmentX(Component.CENTER_ALIGNMENT);
+								}
 							}
 						} catch (java.io.IOException exception) {
 
@@ -414,8 +426,7 @@ public class InputDialog extends JDialog implements ActionListener {
 						}
 
 					} catch (java.io.IOException except) {
-						debugWindow
-								.append("exception: couldn't count hits for criteriaset/criteria");
+						Utilities.showError( "I/O Error: Couldn't generate temporary files for criteriaset/criteria.  Check disk space/permissions", except );
 					}
 				}
 
@@ -481,7 +492,9 @@ public class InputDialog extends JDialog implements ActionListener {
 		}
 
 		debugWindow.append("launched a job request ");
-		try {
+		String pluginDir = null;
+		try 
+		{
 			layoutProperties.updateValues(); // must do this to refresh contents
 			// of the Tunables before we
 			// read from them
@@ -492,7 +505,7 @@ public class InputDialog extends JDialog implements ActionListener {
 
 			if ( !bIsInputAFile ) {
 				// criteriaSet/criteria were selected
-				String pluginDir = PluginManager.getPluginManager()
+				pluginDir = PluginManager.getPluginManager()
 						.getPluginManageDirectory().getCanonicalPath()
 						+ "/GOEliteData";
 				boolean pluginDirExists = new File(pluginDir).exists();
@@ -561,13 +574,22 @@ public class InputDialog extends JDialog implements ActionListener {
 			}
 			debugWindow.append("2>" + service + "\n");
 
-		} catch (Exception e) {
-			System.out.println("Exception: " + e);
+		} catch (IOException e) {
+			if ( pluginDir == null || pluginDir.length() == 0 )
+			{
+				Utilities.showError( "Could not get canonical path from plugin manager directory", e );
+			}
+			else
+			{
+				Utilities.showError( "Could not generate input files from network criteria:" + e.getMessage(), e );
+			}
 		}
 	}
 
 	void launchJob(final String geneListFilePath, final String denomFilePath) {
 		debugWindow.append("launchJob start\n");
+		
+		// INNER class:  SwingWorker - only needed here inside this function
 		SwingWorker<StatusOutputType, Void> worker = new SwingWorker<StatusOutputType, Void>() {
 			edu.sdsc.nbcr.opal.types.StatusOutputType status = null;
 			JTextArea statusWindow = null, stdoutWindow = null,
@@ -575,7 +597,8 @@ public class InputDialog extends JDialog implements ActionListener {
 			AppServicePortType service = null;
 
 			public StatusOutputType doInBackground() {
-				try {
+			try 
+			{
 					JobInputType launchJobInput = new JobInputType();
 
 					debugWindow.append("doInBkgd\n");
@@ -681,9 +704,13 @@ public class InputDialog extends JDialog implements ActionListener {
 									.getDocument().getLength());
 
 					}
-				} catch (Exception e) {
-
+				} catch ( javax.xml.rpc.ServiceException e ) {
+					Utilities.showError( "Could not retrieve webservice", e );
+				} catch ( java.lang.InterruptedException e ) {
+					// Thread.sleep() was interrupted, ignore
 				}
+					
+				
 				return (status);
 			}
 
@@ -692,7 +719,8 @@ public class InputDialog extends JDialog implements ActionListener {
 			public void done() {
 				System.out.println("done!");
 				debugWindow.append("done!\n");
-				try {
+				try 
+				{
 
 					// print results in results panel
 					if (status.getCode() == 8) {
@@ -956,9 +984,16 @@ public class InputDialog extends JDialog implements ActionListener {
 						}
 
 					} // if... end
-				} catch (Exception e) {
-					System.out.println("Exception " + e);
-				} // try...catch...end
+				} 
+				catch ( java.net.MalformedURLException e ) 
+				{
+					Utilities.showError( "malformed URL while fetching results: ", e );
+				}
+				catch( java.io.IOException e )
+				{
+					Utilities.showError( "IO exception while fetching results: ", e );
+				}
+				// try...catch...end
 
 			} // done() end
 		};
