@@ -11,12 +11,24 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Vector;
 
+import javax.swing.JOptionPane;
+
+import cytoscape.Cytoscape;
+
 
 /**
  * Random file utilites
  *
  */
 class Utilities {
+	public static void showError( String message, Exception e )
+	{
+		String newMessage = message + ( e == null ? ": null" : ": " + e.getMessage() );
+		JOptionPane.showMessageDialog(  Cytoscape.getDesktop(), 
+				newMessage, 
+				"", 
+				JOptionPane.ERROR_MESSAGE );
+	}
 	// replaces DOS-style carriage-returns with spaces: needed when sending a
 	// text file from DOS -> UNIX
 	public static byte[] replaceCR(byte[] bytes) {

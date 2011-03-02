@@ -246,7 +246,7 @@ class GOElitePluginCommandListener implements ActionListener {
 			dialog.setSize(new Dimension(350, 500));
 			dialog.setVisible(true);
 		} catch (Exception e) {
-			JOptionPane.showMessageDialog(null, "Exception: " + e);
+			Utilities.showError( "Could not open main GOElite dialog", e );
 			System.out.println("Exception: " + e);
 		}
 
