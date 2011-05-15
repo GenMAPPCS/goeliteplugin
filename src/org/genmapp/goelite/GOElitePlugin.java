@@ -41,7 +41,10 @@ import java.awt.event.ActionListener;
 import java.io.FileWriter;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
@@ -50,6 +53,9 @@ import javax.swing.JTextArea;
 
 import cytoscape.Cytoscape;
 import cytoscape.CytoscapeInit;
+import cytoscape.command.CyCommandException;
+import cytoscape.command.CyCommandManager;
+import cytoscape.command.CyCommandResult;
 import cytoscape.data.CyAttributes;
 import cytoscape.plugin.CytoscapePlugin;
 
@@ -76,7 +82,7 @@ import cytoscape.plugin.CytoscapePlugin;
  *
  */
 public class GOElitePlugin extends CytoscapePlugin {
-	
+
 	public static final String NET_ATTR_SETS = "org.genmapp.criteriasets_1.0";
 	public static final String NET_ATTR_SET_PREFIX = "org.genmapp.criteriaset.";
 	static boolean bResultsMasterPanelAlreadyAdded = false; // used for results
@@ -84,19 +90,18 @@ public class GOElitePlugin extends CytoscapePlugin {
 	// Cytoscape window
 	CloseableTabbedPane resultsMasterPanel = null;
 
-	public static String[] getCriteriaSets(
-			JTextArea debugWindow) {
-		
-		String setsString = CytoscapeInit.getProperties().getProperty(NET_ATTR_SETS);
+	public static String[] getCriteriaSets(JTextArea debugWindow) {
 
+		String setsString = CytoscapeInit.getProperties().getProperty(
+				NET_ATTR_SETS);
 
-		String[] a = { "" };
+		String[] a = {""};
 
-		debugWindow.append("getCriteriaSets!" + setsString );
+		debugWindow.append("getCriteriaSets!" + setsString);
 
-		if ( null != setsString && setsString.length() > 2) {
+		if (null != setsString && setsString.length() > 2) {
 			debugWindow.append("Criteria Sets found");
-			setsString = setsString.substring(1, setsString.length()-1);
+			setsString = setsString.substring(1, setsString.length() - 1);
 			String[] temp = setsString.split("\\]\\[");
 			ArrayList<String> full = new ArrayList<String>();
 			for (String s : temp) {
@@ -111,11 +116,11 @@ public class GOElitePlugin extends CytoscapePlugin {
 	}
 
 	// for a given criteriaSet, return its criteria
-	public static String[] getCriteria(String criteriaSet,
-			JTextArea debugWindow) {
+	public static String[] getCriteria(String criteriaSet, JTextArea debugWindow) {
 		ArrayList<String> criteriaNames = new ArrayList<String>();
-		String paramString = CytoscapeInit.getProperties().getProperty(NET_ATTR_SET_PREFIX + criteriaSet);
-		paramString = paramString.substring(1, paramString.length()-1);
+		String paramString = CytoscapeInit.getProperties().getProperty(
+				NET_ATTR_SET_PREFIX + criteriaSet);
+		paramString = paramString.substring(1, paramString.length() - 1);
 		String[] temp = paramString.split("\\]\\[");
 		debugWindow.append("criteria for " + criteriaSet + " found "
 				+ temp.length);
@@ -162,11 +167,26 @@ public class GOElitePlugin extends CytoscapePlugin {
 			out.println();
 			debugWindow.append("4\n");
 		}
-		// / for every node,
+		// / for every dataset node,
 		// get all nodes that pass the test
+		// collect node list assembled from all CyDatasets
+		Map<String, Object> args = new HashMap<String, Object>();
+		CyCommandResult re = null;
+		try {
+			 re = CyCommandManager.execute("workspaces", CommandHandler.GET_ALL_DATASET_NODES,
+					 args);
+		} catch (CyCommandException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		} catch (RuntimeException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+		int[] dsetNodes = (int[]) re.getResult();
+		
 		String nodeAttributeCriteriaLabel = criteriaSetName + "_"
 				+ criteriaLabel;
-		int[] nodeList = Cytoscape.getRootGraph().getNodeIndicesArray();
+		int[] nodeList = dsetNodes; //Cytoscape.getRootGraph().getNodeIndicesArray();
 		CyAttributes nodeAttributes = Cytoscape.getNodeAttributes();
 		debugWindow.append("bAcceptTrueValuesOnly: " + bAcceptTrueValuesOnly);
 		boolean bFirstValue = true;
@@ -217,7 +237,6 @@ public class GOElitePlugin extends CytoscapePlugin {
 		debugWindow.append("done writing input file: " + numHits + " hits\n");
 		return (nums);
 	}
-
 	public GOElitePlugin() {
 		JMenuItem item = new JMenuItem("Run GO-Elite");
 		JMenu pluginMenu = Cytoscape.getDesktop().getCyMenus().getMenuBar()
@@ -228,8 +247,6 @@ public class GOElitePlugin extends CytoscapePlugin {
 		new CommandHandler();
 	}
 }
-
-
 
 // Handles the top-level menu selection event from Cytoscape
 class GOElitePluginCommandListener implements ActionListener {
@@ -246,11 +263,9 @@ class GOElitePluginCommandListener implements ActionListener {
 			dialog.setSize(new Dimension(350, 500));
 			dialog.setVisible(true);
 		} catch (Exception e) {
-			Utilities.showError( "Could not open main GOElite dialog", e );
+			Utilities.showError("Could not open main GOElite dialog", e);
 			System.out.println("Exception: " + e);
 		}
 
 	}
 }
-
-

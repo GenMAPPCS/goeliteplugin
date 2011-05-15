@@ -35,6 +35,9 @@ class CommandHandler extends AbstractCommandHandler {
 	protected static final String ARG_RESULTS_FILE = "results_file";
 	protected static final String ARG_LOG_FILE = "log_file";
 
+	//EXTERNAL
+	protected final static String GET_ALL_DATASET_NODES = "get all dataset nodes";
+	
 	LayoutProperties props = null;
 
 	public CommandHandler() {
