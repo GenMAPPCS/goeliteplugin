@@ -1,6 +1,5 @@
 package org.genmapp.goelite;
 
-
 import javax.swing.JOptionPane;
 import java.awt.Component;
 import java.awt.Cursor;
@@ -99,22 +98,22 @@ public class InputDialog extends JDialog implements ActionListener {
 			inputCriteriaKeyAttributeComboBox = null;
 	JLabel inputCriteriaDescriptor = null, inputCriteriaSetDescriptor = null;
 	static String[] vSpecies = {};
-	static String vGeneSystems[] = { new String("Ensembl"),
+	static String vGeneSystems[] = {new String("Ensembl"),
 			new String("EntrezGene"), new String("SGD"),
-			new String("TubercuList"), new String("Affymetrix") };
+			new String("TubercuList"), new String("Affymetrix")};
 	// MOD for mapping to GO
-	static String vGeneSystemMODS[] = { new String("Ensembl"),
+	static String vGeneSystemMODS[] = {new String("Ensembl"),
 			new String("EntrezGene"), new String("Ensembl"),
-			new String("Ensembl"), new String("Ensembl") };
+			new String("Ensembl"), new String("Ensembl")};
 	// Code for input files
-	static String vGeneSystemCodes[] = { new String("En"), new String("L"),
-			new String("D"), new String("Tb"), new String("X") };
-	static String vPruningAlgorithms[] = { new String("z-score"),
-			new String("gene number"), new String("combination") };
-	static String vAnalysisType[] = { new String("both"),
-			new String("Pathways"), new String("GeneOntology") };
-	static String vAnalysisTypeDisplay[] = { new String("Pathways + GO"),
-			new String("Pathways"), new String("GeneOntology") };
+	static String vGeneSystemCodes[] = {new String("En"), new String("L"),
+			new String("D"), new String("Tb"), new String("X")};
+	static String vPruningAlgorithms[] = {new String("z-score"),
+			new String("gene number"), new String("combination")};
+	static String vAnalysisType[] = {new String("both"),
+			new String("Pathways"), new String("GeneOntology")};
+	static String vAnalysisTypeDisplay[] = {new String("Pathways + GO"),
+			new String("Pathways"), new String("GeneOntology")};
 
 	boolean bIsInputAFile = true;
 
@@ -156,11 +155,11 @@ public class InputDialog extends JDialog implements ActionListener {
 		try {
 			lines = Utilities.getFileContents(new URL(bridgedbSpecieslist));
 		} catch (java.net.MalformedURLException e) {
-			Utilities.showError( "Malformed URL in species list", e );
+			Utilities.showError("Malformed URL in species list", e);
 			return;
 
 		} catch (java.io.IOException e) {
-			Utilities.showError( "Could not retrieve species list from URL", e );
+			Utilities.showError("Could not retrieve species list from URL", e);
 			return;
 		}
 		int idx = 0;
@@ -308,25 +307,27 @@ public class InputDialog extends JDialog implements ActionListener {
 					for (String n : attributeNames) {
 						debugWindow.append("name: " + n + "\n");
 					}
-					inputCriteriaKeyAttributeDescriptor = new JLabel( "Key attribute:" );
+					inputCriteriaKeyAttributeDescriptor = new JLabel(
+							"Key attribute:");
 					inputCriteriaKeyAttributeComboBox = new JComboBox();
-					inputCriteriaKeyAttributeComboBox.insertItemAt( "ID", 0 );
-					for( String n : attributeNames )
-					{
-						if ( CyAttributes.TYPE_STRING == nodeAttributes.getType( n ) )
-						{
-							inputCriteriaKeyAttributeComboBox.addItem( n );
+					inputCriteriaKeyAttributeComboBox.insertItemAt("ID", 0);
+					for (String n : attributeNames) {
+						if (CyAttributes.TYPE_STRING == nodeAttributes
+								.getType(n)) {
+							inputCriteriaKeyAttributeComboBox.addItem(n);
 						}
 					}
-					inputCriteriaKeyAttributeComboBox.setSelectedIndex( 0 );
-					
-					inputSourceExpandingPanel.add( inputCriteriaKeyAttributeDescriptor );					
-					inputSourceExpandingPanel.add( inputCriteriaKeyAttributeComboBox );
+					inputCriteriaKeyAttributeComboBox.setSelectedIndex(0);
+
+					inputSourceExpandingPanel
+							.add(inputCriteriaKeyAttributeDescriptor);
+					inputSourceExpandingPanel
+							.add(inputCriteriaKeyAttributeComboBox);
 
 				} else if (e.getSource() == inputNumerFileBrowseButton
 						|| e.getSource() == inputDenomFileBrowseButton) {
-					JFileChooser chooser = (null != browseButtonLastFileSelected ? new JFileChooser(
-							browseButtonLastFileSelected)
+					JFileChooser chooser = (null != browseButtonLastFileSelected
+							? new JFileChooser(browseButtonLastFileSelected)
 							: new JFileChooser());
 					int returnVal = chooser.showOpenDialog(panel);
 
@@ -337,8 +338,7 @@ public class InputDialog extends JDialog implements ActionListener {
 							if (e.getSource() == inputNumerFileBrowseButton) {
 								String filePath = chooser.getSelectedFile()
 										.getCanonicalPath();
-								if (new File(filePath).exists() )
-								{
+								if (new File(filePath).exists()) {
 									inputNumerFileJTextArea.setText(filePath);
 									inputNumerFileJTextArea.setColumns(20);
 									inputNumeratorFilenameDescriptor
@@ -352,8 +352,7 @@ public class InputDialog extends JDialog implements ActionListener {
 							} else {
 								String filePath = chooser.getSelectedFile()
 										.getCanonicalPath();
-								if (new File( filePath ).exists() )
-								{
+								if (new File(filePath).exists()) {
 									inputDenomFileJTextArea.setText(filePath);
 									inputDenomFileJTextArea.setColumns(20);
 									inputDenomFilenameDescriptor
@@ -410,12 +409,16 @@ public class InputDialog extends JDialog implements ActionListener {
 
 						} else {
 							long[] nums = GOElitePlugin
-									.generateInputFileFromNetworkCriteria("",
-											"", (String) selectedCriteriaSet,
+									.generateInputFileFromNetworkCriteria(
+											"",
+											"",
+											(String) selectedCriteriaSet,
 											(String) inputCriteriaComboBox
-													.getSelectedItem(),  true,
-											false, 
-											( String ) inputCriteriaKeyAttributeComboBox.getSelectedItem(),
+													.getSelectedItem(),
+											true,
+											false,
+											(String) inputCriteriaKeyAttributeComboBox
+													.getSelectedItem(),
 											debugWindow);
 							numHits = nums[0];
 							numTotal = nums[1];
@@ -426,7 +429,10 @@ public class InputDialog extends JDialog implements ActionListener {
 						}
 
 					} catch (java.io.IOException except) {
-						Utilities.showError( "I/O Error: Couldn't generate temporary files for criteriaset/criteria.  Check disk space/permissions", except );
+						Utilities
+								.showError(
+										"I/O Error: Couldn't generate temporary files for criteriaset/criteria.  Check disk space/permissions",
+										except);
 					}
 				}
 
@@ -493,8 +499,7 @@ public class InputDialog extends JDialog implements ActionListener {
 
 		debugWindow.append("launched a job request ");
 		String pluginDir = null;
-		try 
-		{
+		try {
 			layoutProperties.updateValues(); // must do this to refresh contents
 			// of the Tunables before we
 			// read from them
@@ -503,7 +508,7 @@ public class InputDialog extends JDialog implements ActionListener {
 			String geneListFilePath = "";
 			String denomFilePath = "";
 
-			if ( !bIsInputAFile ) {
+			if (!bIsInputAFile) {
 				// criteriaSet/criteria were selected
 				pluginDir = PluginManager.getPluginManager()
 						.getPluginManageDirectory().getCanonicalPath()
@@ -524,7 +529,7 @@ public class InputDialog extends JDialog implements ActionListener {
 						.getSelectedItem();
 				String selectedCriteria = (String) inputCriteriaComboBox
 						.getSelectedItem();
-				String[] criteriaList = new String[] { selectedCriteria };
+				String[] criteriaList = new String[]{selectedCriteria};
 
 				if (((String) inputCriteriaComboBox.getSelectedItem())
 						.compareTo(criteriaAllStringValue) == 0) {
@@ -551,7 +556,9 @@ public class InputDialog extends JDialog implements ActionListener {
 					GOElitePlugin.generateInputFileFromNetworkCriteria(
 							geneListFilePath, systemCode,
 							(String) selectedCriteriaSet, (String) criteria,
-							true, true, ( String ) inputCriteriaKeyAttributeComboBox.getSelectedItem(), debugWindow );
+							true, true,
+							(String) inputCriteriaKeyAttributeComboBox
+									.getSelectedItem(), debugWindow);
 
 					String denomFileName = criteria + "_denom";
 					denomFilePath = pluginDir + "/" + denomFileName;
@@ -561,7 +568,9 @@ public class InputDialog extends JDialog implements ActionListener {
 					GOElitePlugin.generateInputFileFromNetworkCriteria(
 							denomFilePath, systemCode,
 							(String) selectedCriteriaSet, (String) criteria,
-							false, true, ( String ) inputCriteriaKeyAttributeComboBox.getSelectedItem(), debugWindow );
+							false, true,
+							(String) inputCriteriaKeyAttributeComboBox
+									.getSelectedItem(), debugWindow);
 
 					launchJob(geneListFilePath, denomFilePath);
 				}
@@ -573,23 +582,26 @@ public class InputDialog extends JDialog implements ActionListener {
 
 			}
 			debugWindow.append("2>" + service + "\n");
+			this.dispose();
 
 		} catch (IOException e) {
-			if ( pluginDir == null || pluginDir.length() == 0 )
-			{
-				Utilities.showError( "Could not get canonical path from plugin manager directory", e );
-			}
-			else
-			{
-				Utilities.showError( "Could not generate input files from network criteria:" + e.getMessage(), e );
+			if (pluginDir == null || pluginDir.length() == 0) {
+				Utilities
+						.showError(
+								"Could not get canonical path from plugin manager directory",
+								e);
+			} else {
+				Utilities.showError(
+						"Could not generate input files from network criteria:"
+								+ e.getMessage(), e);
 			}
 		}
 	}
 
 	void launchJob(final String geneListFilePath, final String denomFilePath) {
 		debugWindow.append("launchJob start\n");
-		
-		// INNER class:  SwingWorker - only needed here inside this function
+
+		// INNER class: SwingWorker - only needed here inside this function
 		SwingWorker<StatusOutputType, Void> worker = new SwingWorker<StatusOutputType, Void>() {
 			edu.sdsc.nbcr.opal.types.StatusOutputType status = null;
 			JTextArea statusWindow = null, stdoutWindow = null,
@@ -597,8 +609,7 @@ public class InputDialog extends JDialog implements ActionListener {
 			AppServicePortType service = null;
 
 			public StatusOutputType doInBackground() {
-			try 
-			{
+				try {
 					JobInputType launchJobInput = new JobInputType();
 
 					debugWindow.append("doInBkgd\n");
@@ -704,13 +715,12 @@ public class InputDialog extends JDialog implements ActionListener {
 									.getDocument().getLength());
 
 					}
-				} catch ( javax.xml.rpc.ServiceException e ) {
-					Utilities.showError( "Could not retrieve webservice", e );
-				} catch ( java.lang.InterruptedException e ) {
+				} catch (javax.xml.rpc.ServiceException e) {
+					Utilities.showError("Could not retrieve webservice", e);
+				} catch (java.lang.InterruptedException e) {
 					// Thread.sleep() was interrupted, ignore
 				}
-					
-				
+
 				return (status);
 			}
 
@@ -719,8 +729,7 @@ public class InputDialog extends JDialog implements ActionListener {
 			public void done() {
 				System.out.println("done!");
 				debugWindow.append("done!\n");
-				try 
-				{
+				try {
 
 					// print results in results panel
 					if (status.getCode() == 8) {
@@ -811,7 +820,7 @@ public class InputDialog extends JDialog implements ActionListener {
 										.getFileContents(u);
 								continue;
 							} else if (u.getFile().contains("stderr.txt")) {
-								debugWindow.append( "stderr.txt found\n");
+								debugWindow.append("stderr.txt found\n");
 
 								stderrFileContents = Utilities
 										.getFileContents(u);
@@ -819,19 +828,19 @@ public class InputDialog extends JDialog implements ActionListener {
 							}
 						} // ... end of "for"
 
-						debugWindow.append( "populating tables\n");
+						debugWindow.append("populating tables\n");
 
 						// populate tables
 						CytoPanel cytoPanel = Cytoscape.getDesktop()
 								.getCytoPanel(SwingConstants.EAST);
 
-						debugWindow.append( "GONameResults...\n");
+						debugWindow.append("GONameResults...\n");
 
 						/*
 						 * Process GO Results Table
 						 */
 						if (GONameResultsColumnNames.size() > 0) {
-							debugWindow.append( "processing\n");
+							debugWindow.append("processing\n");
 
 							JTable goResultsTable = new JTable(
 									GONameResultsRowData,
@@ -843,8 +852,8 @@ public class InputDialog extends JDialog implements ActionListener {
 							};
 
 							// hide some columns
-							int[] GONameColumnsToHide = { 0, 1, 5, 6, 7, 11,
-									12, 13 };
+							int[] GONameColumnsToHide = {0, 1, 5, 6, 7, 11, 12,
+									13};
 							for (int j = GONameColumnsToHide.length - 1; j >= 0; j--) {
 								TableColumn column = goResultsTable
 										.getColumnModel().getColumn(
@@ -859,14 +868,13 @@ public class InputDialog extends JDialog implements ActionListener {
 									goResultsTable));
 						}
 
-						debugWindow.append( "PathwayResults...\n");
+						debugWindow.append("PathwayResults...\n");
 
 						/*
 						 * Process Pathway Results Table
 						 */
-						if (pathwayResultsColumnNames.size() > 0) 
-						{
-							debugWindow.append( "processing\n" );
+						if (pathwayResultsColumnNames.size() > 0) {
+							debugWindow.append("processing\n");
 							pathwayResultsTable = new JTable(
 									pathwayResultsRowData,
 									pathwayResultsColumnNames) {
@@ -877,8 +885,8 @@ public class InputDialog extends JDialog implements ActionListener {
 							};
 
 							// hide the same columns
-							int[] pathwayColumnsToHide = { 0, 1, 5, 6, 7, 11,
-									12, 13 };
+							int[] pathwayColumnsToHide = {0, 1, 5, 6, 7, 11,
+									12, 13};
 							for (int j = pathwayColumnsToHide.length - 1; j >= 0; j--) {
 								TableColumn column = pathwayResultsTable
 										.getColumnModel().getColumn(
@@ -887,7 +895,7 @@ public class InputDialog extends JDialog implements ActionListener {
 							}
 
 							// support row selection
-							// pathwayResultsTable.setCellSelectionEnabled(true);
+							//pathwayResultsTable.setCellSelectionEnabled(true);
 							ListSelectionModel tableRowSelectionModel = pathwayResultsTable
 									.getSelectionModel();
 							tableRowSelectionModel
@@ -909,8 +917,9 @@ public class InputDialog extends JDialog implements ActionListener {
 													.getY());
 											pathwayResultsTable
 													.setCursor(pathwayResultsTable
-															.columnAtPoint(p) == 0 ? new Cursor(
-															Cursor.HAND_CURSOR)
+															.columnAtPoint(p) == 0
+															? new Cursor(
+																	Cursor.HAND_CURSOR)
 															: new Cursor(
 																	Cursor.DEFAULT_CURSOR));
 										}
@@ -924,7 +933,7 @@ public class InputDialog extends JDialog implements ActionListener {
 
 						}
 
-						debugWindow.append( "log file...\n");
+						debugWindow.append("log file...\n");
 
 						/*
 						 * Process log file
@@ -934,14 +943,13 @@ public class InputDialog extends JDialog implements ActionListener {
 									+ "\n");
 						}
 
-						debugWindow.append( "stdout...\n");
+						debugWindow.append("stdout...\n");
 
 						/*
 						 * Process stdout and stderr file
 						 */
-						if ( stdoutFileContents.size() > 0 ) 
-						{
-							debugWindow.append( "process stdout\n");
+						if (stdoutFileContents.size() > 0) {
+							debugWindow.append("process stdout\n");
 
 							JPanel stdoutPanel = new JPanel();
 							stdoutPanel.setLayout(new BoxLayout(stdoutPanel,
@@ -960,11 +968,10 @@ public class InputDialog extends JDialog implements ActionListener {
 							}
 						}
 
-						debugWindow.append( "stderr...\n");
+						debugWindow.append("stderr...\n");
 
-						if ( stderrFileContents.size() > 0 ) 
-						{
-							debugWindow.append( "process stderr\n" );
+						if (stderrFileContents.size() > 0) {
+							debugWindow.append("process stderr\n");
 
 							JPanel stderrPanel = new JPanel();
 							stderrPanel.setLayout(new BoxLayout(stderrPanel,
@@ -984,14 +991,12 @@ public class InputDialog extends JDialog implements ActionListener {
 						}
 
 					} // if... end
-				} 
-				catch ( java.net.MalformedURLException e ) 
-				{
-					Utilities.showError( "malformed URL while fetching results: ", e );
-				}
-				catch( java.io.IOException e )
-				{
-					Utilities.showError( "IO exception while fetching results: ", e );
+				} catch (java.net.MalformedURLException e) {
+					Utilities.showError(
+							"malformed URL while fetching results: ", e);
+				} catch (java.io.IOException e) {
+					Utilities.showError(
+							"IO exception while fetching results: ", e);
 				}
 				// try...catch...end
 
@@ -1041,8 +1046,14 @@ public class InputDialog extends JDialog implements ActionListener {
 
 				// verify that network still exists and has not been destroyed
 				if (Cytoscape.getNetworkSet().contains(n)) {
-					loaded = true;
-					Cytoscape.getDesktop().setFocus(n.getIdentifier());
+					// check to see if network has view; if not then destroy and reload!
+					if (!Cytoscape.getNetworkViewMap().containsValue(Cytoscape.getNetworkView(n.getIdentifier()))){
+						Cytoscape.destroyNetwork(n);
+						networkMap.remove(n);
+					} else {
+						loaded = true;
+						Cytoscape.getDesktop().setFocus(n.getIdentifier());
+					}
 				} else {
 					networkMap.remove(n);
 				}
