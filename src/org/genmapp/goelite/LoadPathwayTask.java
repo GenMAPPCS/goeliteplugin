@@ -4,6 +4,8 @@ import java.rmi.RemoteException;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.swing.JTable;
+
 import org.pathvisio.cytoscape.GpmlPlugin;
 import org.pathvisio.model.ConverterException;
 import org.pathvisio.model.Pathway;
@@ -19,15 +21,17 @@ public class LoadPathwayTask implements Task {
 
 	private GpmlPlugin gp = null;
 	private String wp = null;
+	private JTable prt = null;
 	private Integer rowIndex = null;
 	private CyNetwork n = null;
 	private Map<Integer, CyNetwork> networkMap = new HashMap<Integer, CyNetwork>();
 
-	public LoadPathwayTask(GpmlPlugin gp, String wp, Integer ri) {
+	public LoadPathwayTask(GpmlPlugin gp, String wp, Integer ri, JTable prt) {
 		super();
 		this.gp = gp;
 		this.wp = wp;
 		this.rowIndex = ri;
+		this.prt = prt;
 	}
 
 	public String getTitle() {
@@ -60,6 +64,10 @@ public class LoadPathwayTask implements Task {
 			new_value[0] = n;
 			new_value[1] = n.getIdentifier();
 			Cytoscape.firePropertyChange(Cytoscape.NETWORK_LOADED, null, new_value);
+			
+			// reset selection, to respond to repeat clicks
+			prt.clearSelection();
+			//lsm.clearSelection();
 
 		} catch (RemoteException e1) {
 			e1.printStackTrace();

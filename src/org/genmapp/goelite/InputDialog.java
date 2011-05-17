@@ -1053,6 +1053,8 @@ public class InputDialog extends JDialog implements ActionListener {
 					} else {
 						loaded = true;
 						Cytoscape.getDesktop().setFocus(n.getIdentifier());
+						// then clear selection to allow refocus
+						pathwayResultsTable.clearSelection();
 					}
 				} else {
 					networkMap.remove(n);
@@ -1071,7 +1073,7 @@ public class InputDialog extends JDialog implements ActionListener {
 
 				// if GPML plugin is loaded, then attempt load pathway
 				if (null != gp) {
-					Task task = new LoadPathwayTask(gp, wp, rowIndex);
+					Task task = new LoadPathwayTask(gp, wp, rowIndex, pathwayResultsTable);
 					JTaskConfig config = new JTaskConfig();
 					config.setModal(false);
 					config.setOwner(Cytoscape.getDesktop());
@@ -1079,6 +1081,7 @@ public class InputDialog extends JDialog implements ActionListener {
 					TaskManager.executeTask(task, config);
 
 				}
+
 			}
 
 		}
