@@ -580,7 +580,7 @@ public class InputDialog extends JDialog implements ActionListener {
 
 			}
 			debugWindow.append("2>" + service + "\n");
-			this.dispose();  // close the InputDialog at this point
+			//this.dispose();  // close the InputDialog at this point
 
 		} catch (IOException e) {
 			if (pluginDir == null || pluginDir.length() == 0) {
@@ -930,10 +930,13 @@ public class InputDialog extends JDialog implements ActionListener {
 							debugWindow.append( "set selection model for pathway results");
 
 							// render cells to appear like hyperlinks
+							debugWindow.append( "1\n");
 							ClickableRenderer cr = new ClickableRenderer();
 							cr.setToolTipText("Click to load pathway");
+							debugWindow.append( "2\n");
 							pathwayResultsTable.getColumnModel().getColumn(0)
 									.setCellRenderer(cr);
+							debugWindow.append( "3\n");
 							pathwayResultsTable
 									.addMouseMotionListener(new MouseMotionAdapter() {
 										public void mouseMoved(MouseEvent e) {
@@ -949,12 +952,16 @@ public class InputDialog extends JDialog implements ActionListener {
 										}
 									});
 
+							debugWindow.append( "4\n");
 							// resize columns based on data
 							resizeColumns(pathwayResultsTable);
+							debugWindow.append( "after resize columns\n");
 
 							JScrollPane pathwayScrollPane = new JScrollPane( pathwayResultsTable );
 							resultsParentPanel.addTab("Pathway",
 									pathwayScrollPane );
+							debugWindow.append( "setting selected component\n");
+
 							resultsParentPanel.setSelectedComponent( pathwayScrollPane );
 							debugWindow.append( "end pathway results display");
 							
@@ -1020,11 +1027,20 @@ public class InputDialog extends JDialog implements ActionListener {
 
 					} // if... end
 				} catch (java.net.MalformedURLException e) {
+					debugWindow.append("error:" + e );
+					statusWindow.append("exception: " + e );
+
 					Utilities.showError(
 							"malformed URL while fetching results: ", e);
 				} catch (java.io.IOException e) {
+					debugWindow.append("error:" + e);
+					statusWindow.append( "exception: " + e );
 					Utilities.showError(
 							"IO exception while fetching results: ", e);
+				} catch( Exception e  )
+				{
+					debugWindow.append( "Exception: " + e + "\n");
+					statusWindow.append( "Exception: " + e );
 				}
 				// try...catch...end
 
