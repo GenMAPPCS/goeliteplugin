@@ -75,7 +75,6 @@ import java.util.ArrayList;
  */
 public class InputDialog extends JDialog implements ActionListener {
 	static CloseableTabbedPane resultsMasterPanel = null;
-	JTabbedPane resultsParentPanel = null;
 
 	String criteriaAllStringValue = "-all-"; // selection value for the criteria
 	// "all"
@@ -84,7 +83,6 @@ public class InputDialog extends JDialog implements ActionListener {
 	JTextArea debugWindow = null;
 	public final static long serialVersionUID = 0;
 	AppServicePortType service = null;
-	String jobID = null;
 	LayoutProperties layoutProperties = null;
 	JLabel inputDenomFilenameDescriptor = null,
 			inputNumeratorFilenameDescriptor = null,
@@ -582,7 +580,7 @@ public class InputDialog extends JDialog implements ActionListener {
 
 			}
 			debugWindow.append("2>" + service + "\n");
-			this.dispose();
+			this.dispose();  // close the InputDialog at this point
 
 		} catch (IOException e) {
 			if (pluginDir == null || pluginDir.length() == 0) {
@@ -607,6 +605,8 @@ public class InputDialog extends JDialog implements ActionListener {
 			JTextArea statusWindow = null, stdoutWindow = null,
 					stderrWindow = null;
 			AppServicePortType service = null;
+			JTabbedPane resultsParentPanel = null;
+			String jobID = null;
 
 			public StatusOutputType doInBackground() {
 				try {
@@ -769,6 +769,8 @@ public class InputDialog extends JDialog implements ActionListener {
 
 								boolean processingGONameResultsNotPathwayResults = true;
 
+								// the results file is arranged so that GO results are reported above the Pathway results
+								// When we see a header row that has "MAPP" as its 3rd column, we know that we've switched to Pathway results
 								while (contents.hasMoreElements()) {
 
 									String line = (String) contents
@@ -781,15 +783,20 @@ public class InputDialog extends JDialog implements ActionListener {
 										continue;
 									} // ignore blank lines
 
-									if (rowData[2].contains("MAPP")) {
+									if (rowData[2].contains("MAPP")) 
+									{
+										debugWindow.append( "switching to pathway results");
 										processingGONameResultsNotPathwayResults = false;
 									}
 
 									// is this a column header?
 									if (processingGONameResultsNotPathwayResults
 											&& GONameResultsColumnNames.size() == 0) {
+										
+										// GO results found: add results
 										GONameResultsColumnNames.addAll(Arrays
 												.asList(rowData));
+										
 										continue;
 									} else if (!processingGONameResultsNotPathwayResults
 											&& pathwayResultsColumnNames.size() == 0) {
@@ -828,7 +835,21 @@ public class InputDialog extends JDialog implements ActionListener {
 							}
 						} // ... end of "for"
 
-						debugWindow.append("populating tables\n");
+								
+						if ( GONameResultsRowData.size() == 0 )
+						{
+							statusWindow.append( "No GO results found\n" );
+						}
+						if ( pathwayResultsRowData.size() == 0 )
+						{
+							statusWindow.append( "No Pathway results found\n" );
+						}
+						else
+						{
+							debugWindow.append( "pathway results ( " + pathwayResultsRowData.size() + " rows ): " + pathwayResultsRowData.toString() );
+						}
+						debugWindow.append( "populating tables\n");
+
 
 						// populate tables
 						CytoPanel cytoPanel = Cytoscape.getDesktop()
@@ -839,8 +860,8 @@ public class InputDialog extends JDialog implements ActionListener {
 						/*
 						 * Process GO Results Table
 						 */
-						if (GONameResultsColumnNames.size() > 0) {
-							debugWindow.append("processing\n");
+						if (GONameResultsRowData.size() > 0) {
+							debugWindow.append("processing GOName Results\n");
 
 							JTable goResultsTable = new JTable(
 									GONameResultsRowData,
@@ -864,8 +885,10 @@ public class InputDialog extends JDialog implements ActionListener {
 							// resize columns based on data
 							resizeColumns(goResultsTable);
 
-							resultsParentPanel.addTab("GO", new JScrollPane(
-									goResultsTable));
+							JScrollPane goScrollPane = new JScrollPane( goResultsTable );
+							resultsParentPanel.addTab("GO", goScrollPane );
+							
+							resultsParentPanel.setSelectedComponent( goScrollPane );
 						}
 
 						debugWindow.append("PathwayResults...\n");
@@ -873,8 +896,8 @@ public class InputDialog extends JDialog implements ActionListener {
 						/*
 						 * Process Pathway Results Table
 						 */
-						if (pathwayResultsColumnNames.size() > 0) {
-							debugWindow.append("processing\n");
+						if (pathwayResultsRowData.size() > 0) {
+							debugWindow.append("processing pathwayResults\n");
 							pathwayResultsTable = new JTable(
 									pathwayResultsRowData,
 									pathwayResultsColumnNames) {
@@ -893,7 +916,7 @@ public class InputDialog extends JDialog implements ActionListener {
 												pathwayColumnsToHide[j]);
 								pathwayResultsTable.removeColumn(column);
 							}
-
+							debugWindow.append( "hiding columns for pathway results");
 							// support row selection
 							//pathwayResultsTable.setCellSelectionEnabled(true);
 							ListSelectionModel tableRowSelectionModel = pathwayResultsTable
@@ -904,6 +927,7 @@ public class InputDialog extends JDialog implements ActionListener {
 									.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 							pathwayResultsTable
 									.setSelectionModel(tableRowSelectionModel);
+							debugWindow.append( "set selection model for pathway results");
 
 							// render cells to appear like hyperlinks
 							ClickableRenderer cr = new ClickableRenderer();
@@ -928,8 +952,12 @@ public class InputDialog extends JDialog implements ActionListener {
 							// resize columns based on data
 							resizeColumns(pathwayResultsTable);
 
+							JScrollPane pathwayScrollPane = new JScrollPane( pathwayResultsTable );
 							resultsParentPanel.addTab("Pathway",
-									new JScrollPane(pathwayResultsTable));
+									pathwayScrollPane );
+							resultsParentPanel.setSelectedComponent( pathwayScrollPane );
+							debugWindow.append( "end pathway results display");
+							
 
 						}
 
