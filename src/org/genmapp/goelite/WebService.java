@@ -97,9 +97,10 @@ class WebService {
 			geneListOpalFile.setName(geneListFile.getName()); 
 			statusWindow.append("processing gene list file " + geneListOpalFile.getName() + "\n");
 			byte[] geneListFileBytes = Utilities.getBytesFromFile(geneListFile);
+
 			geneListOpalFile
 					.setContents(Utilities.replaceCR(geneListFileBytes));
-
+			
 			File denomFile = new File((String) args
 					.get( ARG_DENOM_FILE ) );
 			statusWindow.append("denomfile opened\n");
@@ -110,7 +111,7 @@ class WebService {
 			statusWindow.append("processing denom list file " + denomOpalFile.getName() + "\n");
 			byte[] denomFileBytes = Utilities.getBytesFromFile(denomFile);
 			denomOpalFile.setContents(Utilities.replaceCR(denomFileBytes));
-
+			
 			JobInputType launchJobInput = new JobInputType();
 
 			// *** Launch webservice

@@ -32,15 +32,27 @@ class Utilities {
 	// replaces DOS-style carriage-returns with spaces: needed when sending a
 	// text file from DOS -> UNIX
 	public static byte[] replaceCR(byte[] bytes) {
-		byte[] newBytes = new byte[bytes.length];
 
+		// first determine how many \r there are
 		int j = 0;
+		for ( int i = 0; i < bytes.length; i++ ) {
+			if ( '\r' != bytes[ i ] )
+			{
+				j++;
+			}
+		}
+		
+		// now copy the data into a new buffer ( less the \r characters )
+		byte[] newBytes = new byte[ j ];
+		
+		j = 0;  // rewind j 
 		for (int i = 0; i < bytes.length; i++) {
 			if ('\r' != bytes[i]) {
 				newBytes[j] = bytes[i];
 				j++;
 			}
 		}
+		
 		return (newBytes);
 	}
 	public static Vector<String> getFileContents(URL u)
@@ -106,6 +118,7 @@ class Utilities {
 		// to ensure that file is not larger than Integer.MAX_VALUE.
 		if (length > Integer.MAX_VALUE) {
 			// File is too large
+			throw new IOException( "File too large to send in buffer" );
 		}
 
 		// Create the byte array to hold the data
