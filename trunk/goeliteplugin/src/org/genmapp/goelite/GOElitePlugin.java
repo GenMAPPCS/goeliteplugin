@@ -125,7 +125,7 @@ public class GOElitePlugin extends CytoscapePlugin {
 		debugWindow.append("criteria for " + criteriaSet + " found "
 				+ temp.length);
 
-		// split first on "comma", then on ":"
+		// split first on "comma", then on "::"
 		boolean isFirst = true;
 		for (String criterion : temp) {
 			// skip the first entry, it's not actually a criterion
@@ -134,7 +134,7 @@ public class GOElitePlugin extends CytoscapePlugin {
 				continue;
 			}
 
-			String[] tokens = criterion.split(":");
+			String[] tokens = criterion.split("::");
 			debugWindow.append("tokens[1]: " + tokens[1]);
 			criteriaNames.add(tokens[1]);
 		}
@@ -199,10 +199,14 @@ public class GOElitePlugin extends CytoscapePlugin {
 			Node node = Cytoscape.getRootGraph().getNode(i);
 			if (nodeAttributes.hasAttribute(node.getIdentifier(),
 					nodeAttributeCriteriaLabel)) {
+				if (nodeAttributes.getStringAttribute(node.getIdentifier(), nodeAttributeCriteriaLabel)
+						.equals("null")) {
+					continue;
+				}
 				numTotal++;
 				if (!bAcceptTrueValuesOnly
-						|| nodeAttributes.getBooleanAttribute(node
-								.getIdentifier(), nodeAttributeCriteriaLabel)) {
+						|| Boolean.valueOf(nodeAttributes.getStringAttribute(node
+								.getIdentifier(), nodeAttributeCriteriaLabel))) {
 					if (node.getIdentifier().length() > 0) {
 						if (bWriteMode) {
 							if (!bFirstValue) {
