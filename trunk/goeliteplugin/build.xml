@@ -89,7 +89,7 @@
 	<target name="jar" depends="compile" description="Creates PlugIn Jar File.">
 
 		<unjar dest="${build.classes}">
-			<fileset dir="${pluginlib.dir}" />
+			<fileset dir="${pluginlib.dir}" excludes="log4j.properties"/>
 		</unjar>
 
 		<jar destfile="${build.dir}/${plugin.name}.jar">
