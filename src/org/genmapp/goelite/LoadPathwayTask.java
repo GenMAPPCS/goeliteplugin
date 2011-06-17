@@ -6,11 +6,11 @@ import java.util.Map;
 
 import javax.swing.JTable;
 
+import org.pathvisio.core.model.ConverterException;
+import org.pathvisio.core.model.Pathway;
 import org.pathvisio.cytoscape.GpmlPlugin;
-import org.pathvisio.model.ConverterException;
-import org.pathvisio.model.Pathway;
-import org.pathvisio.wikipathways.WikiPathwaysClient;
 import org.pathvisio.wikipathways.webservice.WSPathway;
+import org.wikipathways.client.WikiPathwaysClient;
 
 import cytoscape.CyNetwork;
 import cytoscape.Cytoscape;
