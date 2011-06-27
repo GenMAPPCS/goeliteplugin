@@ -11,10 +11,10 @@
 	<property name="src.dir" value="src" />
 
 	<!--  The directory containing library jar files -->
-	<property name="cytoroot.dir" value="/Applications/Cytoscape_v2.8.1" />
+	<property name="cytoroot.dir" value="/Applications/Cytoscape_v2.8.2" />
 
 
-	<property name="release.dir" value="/Applications/Cytoscape_v2.8.1" />
+	<property name="release.dir" value="/Applications/Cytoscape_v2.8.2" />
 
 
 	<!-- Temporary build directories -->
@@ -41,10 +41,12 @@
 			<include name="*.jar" />
 		</fileset>
 
+		<!--
 		<fileset dir="${pluginlib.dir}">
 			<include name="*.jar" />
 		</fileset>
-
+		-->
+		
 		<fileset dir="${commonlib.dir}">
 			<include name="*.jar" />
 		</fileset>
@@ -87,11 +89,13 @@
 
 	<!--  Create PlugIn Jar File (Unobfuscated) -->
 	<target name="jar" depends="compile" description="Creates PlugIn Jar File.">
-
-		<unjar dest="${build.classes}">
-			<fileset dir="${pluginlib.dir}" excludes="log4j.properties"/>
-		</unjar>
-
+   		<!--
+        <unjar dest="${build.classes}">
+         <fileset dir="${pluginlib.dir}" includes="*.jar"/>
+        </unjar>
+		-->
+        <copy file="plugin.props" todir="${build.classes}/org/genmapp/goelite/"/>
+        	
 		<jar destfile="${build.dir}/${plugin.name}.jar">
 			<fileset dir="${build.classes}" />
 		</jar>
