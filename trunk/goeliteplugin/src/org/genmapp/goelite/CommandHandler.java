@@ -1,12 +1,13 @@
 package org.genmapp.goelite;
 
 import java.net.URL;
-import java.util.HashMap;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Vector;
 
 import javax.swing.JDialog;
+import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
 
 import cytoscape.command.AbstractCommandHandler;
@@ -22,7 +23,7 @@ import edu.sdsc.nbcr.opal.types.StatusOutputType;
  *  Registers CyCommands to Cytoscape, and handles CyCommand events/requests
  *
  */
-class CommandHandler extends AbstractCommandHandler {
+public class CommandHandler extends AbstractCommandHandler {
 
 	protected static final String GETDATA = "get data";
 	protected static final String LAUNCH = "launch";
@@ -37,6 +38,15 @@ class CommandHandler extends AbstractCommandHandler {
 
 	//EXTERNAL
 	protected final static String GET_ALL_DATASET_NODES = "get all dataset nodes";
+	
+	private final static String UPDATE_RESULTS = "update results";
+	private final static String CHANGE_RESULT_STATUS = "change result status";
+	private final static String CHANGE_RESULT_TABINDEX = "change result tab";
+	private static final String ARG_RESULT_NAME = "name";
+	private static final String ARG_RESULT_GREEN = "green";
+	private static final String ARG_RESULT_COMPONENT = "component";
+	private static final String ARG_RESULT_SUBTABBED_PANE = "subtabbedpane";
+	private static final String ARG_RESULT_SUBCOMPONENT = "subcomponent";
 	
 	LayoutProperties props = null;
 
@@ -131,5 +141,71 @@ class CommandHandler extends AbstractCommandHandler {
 			}
 		}
 		return (result);
+	}
+	
+	/**
+	 * 
+	 */
+	public static void updateResultsPanel(String name, boolean green, String component, String subtabpane, String tabindex){
+		Map<String, Object> args = new HashMap<String, Object>();
+		args.put(ARG_RESULT_NAME, name);
+		args.put(ARG_RESULT_GREEN, green);
+		args.put(ARG_RESULT_COMPONENT, component);
+		args.put(ARG_RESULT_SUBTABBED_PANE, subtabpane);
+		args.put(ARG_RESULT_SUBCOMPONENT, tabindex);
+		
+		CyCommandResult re = null;
+		try {
+			 re = CyCommandManager.execute("workspaces", UPDATE_RESULTS,
+					 args);
+		} catch (CyCommandException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		} catch (RuntimeException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+	}
+	
+	/**
+	 * 
+	 */
+	public static void changeResultStatus(String name, boolean green){
+		Map<String, Object> args = new HashMap<String, Object>();
+		args.put(ARG_RESULT_NAME, name);
+		args.put(ARG_RESULT_GREEN, green);
+		
+		CyCommandResult re = null;
+		try {
+			 re = CyCommandManager.execute("workspaces", CHANGE_RESULT_STATUS,
+					 args);
+		} catch (CyCommandException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		} catch (RuntimeException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+	}
+	
+	/**
+	 * 
+	 */
+	public static void changeResultTabIndex(String name, String tabindex){
+		Map<String, Object> args = new HashMap<String, Object>();
+		args.put(ARG_RESULT_NAME, name);
+		args.put(ARG_RESULT_SUBCOMPONENT, tabindex);
+		
+		CyCommandResult re = null;
+		try {
+			 re = CyCommandManager.execute("workspaces", CHANGE_RESULT_TABINDEX,
+					 args);
+		} catch (CyCommandException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		} catch (RuntimeException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
 	}
 }

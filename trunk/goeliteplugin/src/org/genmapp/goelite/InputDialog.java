@@ -1,6 +1,5 @@
 package org.genmapp.goelite;
 
-import javax.swing.JOptionPane;
 import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.Dimension;
@@ -10,23 +9,19 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionAdapter;
-import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Vector;
 import java.util.regex.Pattern;
-import cytoscape.CytoscapeInit;
-import cytoscape.data.CyAttributes;
-import java.util.List;
+
 import javax.swing.BoxLayout;
 import javax.swing.ButtonGroup;
 import javax.swing.JButton;
@@ -52,6 +47,8 @@ import org.pathvisio.cytoscape.GpmlPlugin;
 
 import cytoscape.CyNetwork;
 import cytoscape.Cytoscape;
+import cytoscape.CytoscapeInit;
+import cytoscape.data.CyAttributes;
 import cytoscape.layout.LayoutProperties;
 import cytoscape.layout.Tunable;
 import cytoscape.plugin.PluginManager;
@@ -63,7 +60,6 @@ import cytoscape.view.cytopanels.CytoPanelState;
 import edu.sdsc.nbcr.opal.AppServicePortType;
 import edu.sdsc.nbcr.opal.types.JobInputType;
 import edu.sdsc.nbcr.opal.types.StatusOutputType;
-import java.util.ArrayList;
 
 /**
  * In terms of design, layoutProperites is created in the GOElitePlugin and
@@ -503,6 +499,7 @@ public class InputDialog extends JDialog implements ActionListener {
 			// read from them
 
 			// prepare input files
+			String geneListFileName = "";
 			String geneListFilePath = "";
 			String denomFilePath = "";
 
@@ -542,7 +539,7 @@ public class InputDialog extends JDialog implements ActionListener {
 						layoutProperties.getValue("gene_system_idx_code"))
 						.intValue()];
 				for (String criteria : criteriaList) {
-					String geneListFileName = criteria;
+					geneListFileName = criteria;
 					geneListFilePath = pluginDir + "/" + geneListFileName;
 					geneListFilePath = generateUniqueFilename(geneListFilePath);
 
@@ -598,7 +595,8 @@ public class InputDialog extends JDialog implements ActionListener {
 
 	void launchJob(final String geneListFilePath, final String denomFilePath) {
 		debugWindow.append("launchJob start\n");
-
+		this.dispose();
+		
 		// INNER class: SwingWorker - only needed here inside this function
 		SwingWorker<StatusOutputType, Void> worker = new SwingWorker<StatusOutputType, Void>() {
 			edu.sdsc.nbcr.opal.types.StatusOutputType status = null;
@@ -607,6 +605,8 @@ public class InputDialog extends JDialog implements ActionListener {
 			AppServicePortType service = null;
 			JTabbedPane resultsParentPanel = null;
 			String jobID = null;
+			String geneListFileName = null;
+			String resultName = null;
 
 			public StatusOutputType doInBackground() {
 				try {
@@ -632,15 +632,20 @@ public class InputDialog extends JDialog implements ActionListener {
 
 					resultsParentPanel.addTab("Status", statusPanel);
 
-					String geneListFileName = new File(geneListFilePath)
+					geneListFileName = new File(geneListFilePath)
 							.getName();
-					resultsMasterPanel.addTab(geneListFileName,
+					resultName = geneListFileName.substring(0, geneListFileName.lastIndexOf("."));
+					resultsMasterPanel.addTab(resultName,
 							resultsParentPanel);
 					if (!bResultsMasterPanelAlreadyAdded) {
 						cytoPanel.add("GO-Elite Results", resultsMasterPanel);
 						bResultsMasterPanelAlreadyAdded = true;
 					}
-					cytoPanel.setState(CytoPanelState.DOCK);
+					if (cytoPanel.getState().equals(CytoPanelState.HIDE))
+						cytoPanel.setState(CytoPanelState.DOCK);
+					
+					//update ResultsPanel in Workspaces
+					CommandHandler.updateResultsPanel(resultName, false, "GO-Elite Results", resultName, "Status");
 
 					// CytoPanel -> resultsMasterPanel "GO-Elite Results" ->
 					// resultsParentPanel ("Status"|"Pathway"|"GO")
@@ -888,7 +893,11 @@ public class InputDialog extends JDialog implements ActionListener {
 							JScrollPane goScrollPane = new JScrollPane( goResultsTable );
 							resultsParentPanel.addTab("GO", goScrollPane );
 							
+							resultsMasterPanel.setSelectedComponent(resultsParentPanel);
 							resultsParentPanel.setSelectedComponent( goScrollPane );
+							
+							CommandHandler.changeResultStatus(resultName, true);
+							CommandHandler.changeResultTabIndex(resultName, "GO");
 						}
 
 						debugWindow.append("PathwayResults...\n");
@@ -962,10 +971,12 @@ public class InputDialog extends JDialog implements ActionListener {
 									pathwayScrollPane );
 							debugWindow.append( "setting selected component\n");
 
+							resultsMasterPanel.setSelectedComponent(resultsParentPanel);
 							resultsParentPanel.setSelectedComponent( pathwayScrollPane );
 							debugWindow.append( "end pathway results display");
 							
-
+							CommandHandler.changeResultStatus(resultName, true);
+							CommandHandler.changeResultTabIndex(resultName, "Pathway");
 						}
 
 						debugWindow.append("log file...\n");
@@ -1017,6 +1028,12 @@ public class InputDialog extends JDialog implements ActionListener {
 							stderrPanel.add(stderrScroll);
 
 							resultsParentPanel.addTab("Stderr", stderrPanel);
+							
+							resultsMasterPanel.setSelectedComponent(resultsParentPanel);
+							resultsParentPanel.setSelectedComponent( stderrPanel );
+							
+							CommandHandler.changeResultStatus(resultName, false);
+							CommandHandler.changeResultTabIndex(resultName, "Stderr");
 
 							for (int j = 0; j < stderrFileContents.size(); j++) {
 								stderrWindow.append(stderrFileContents
