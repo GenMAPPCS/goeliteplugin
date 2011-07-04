@@ -454,7 +454,8 @@ public class InputDialog extends JDialog implements ActionListener {
 		generateInputFileButton.addActionListener(this);
 
 		debugWindow = new JTextArea("", 5, 40);
-		panel.add(new JScrollPane(debugWindow));
+		// Removing debug window for release version
+		//panel.add(new JScrollPane(debugWindow));
 		panel.setVisible(true);
 
 		panel.setMinimumSize(new Dimension(300, 600));
