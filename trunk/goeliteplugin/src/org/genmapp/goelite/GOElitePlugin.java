@@ -42,9 +42,11 @@ import java.io.FileWriter;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
@@ -125,7 +127,7 @@ public class GOElitePlugin extends CytoscapePlugin {
 		debugWindow.append("criteria for " + criteriaSet + " found "
 				+ temp.length);
 
-		// split first on "comma", then on "::"
+		// split first on "comma", then on ":"
 		boolean isFirst = true;
 		for (String criterion : temp) {
 			// skip the first entry, it's not actually a criterion
@@ -134,7 +136,7 @@ public class GOElitePlugin extends CytoscapePlugin {
 				continue;
 			}
 
-			String[] tokens = criterion.split("::");
+			String[] tokens = criterion.split(":");
 			debugWindow.append("tokens[1]: " + tokens[1]);
 			criteriaNames.add(tokens[1]);
 		}
@@ -142,15 +144,12 @@ public class GOElitePlugin extends CytoscapePlugin {
 				.size()]));
 	}
 
-	// produces a probeset/denominator file that can be sent to the webservice
-	// for GO-Elite analysis
-	// bWriteMode = if false, then does not write the file to disk; useful for
-	// counting number of hits it would write
-	public static long[] generateInputFileFromNetworkCriteria(
-			String pathToFile, String systemCode, String criteriaSetName,
-			String criteriaLabel, boolean bAcceptTrueValuesOnly,
+	public static void generateInputFileFromNodeSet( 
+			String pathToFile, String systemCode, 
+			Set< Node > nodeSet, 
 			boolean bWriteMode, String keyAttribute, JTextArea debugWindow)
-			throws java.io.IOException {
+			throws java.io.IOException 
+	{
 		FileWriter fw = null;
 		PrintWriter out = null;
 
@@ -167,7 +166,57 @@ public class GOElitePlugin extends CytoscapePlugin {
 			out.println();
 			debugWindow.append("4\n");
 		}
-		// / for every dataset node,
+		
+		boolean bFirstValue = true;
+		long numTotal = 0;
+		CyAttributes nodeAttributes = Cytoscape.getNodeAttributes();
+		for (Node node : nodeSet) {
+			boolean value = false;
+			{
+				numTotal++;
+				if (bWriteMode) {
+					if (!bFirstValue) 
+					{
+						out.println();
+					} // opal server barfs on empty lines in numerator file
+
+					String key = "";
+					if ( keyAttribute.equals( "ID" ) )
+					{
+						key = node.getIdentifier();
+					}
+					else
+					{
+						key = nodeAttributes.getStringAttribute( node.getIdentifier(), keyAttribute );
+					}
+							
+					debugWindow.append( ">" + key + "\t" + systemCode + "\n" );
+					out.write( key + "\t" + systemCode);
+				}
+				bFirstValue = false;
+			}
+		}
+		if (bWriteMode) {
+			out.close();
+			fw.close();
+		}
+		debugWindow.append("done writing input file\n");
+	}
+	
+	// produces a probeset/denominator file that can be sent to the webservice
+	// for GO-Elite analysis
+	// bWriteMode = if false, then does not write the file to disk; useful for
+	// counting number of hits it would write
+	public static long[] generateInputFileFromNetworkCriteria(
+			String pathToFile, String systemCode, String criteriaSetName,
+			String criteriaLabel, boolean bAcceptTrueValuesOnly,
+			boolean bWriteMode, String keyAttribute, JTextArea debugWindow)
+			throws java.io.IOException {
+		FileWriter fw = null;
+		PrintWriter out = null;
+
+		
+		// for every dataset node,
 		// get all nodes that pass the test
 		// collect node list assembled from all CyDatasets
 		Map<String, Object> args = new HashMap<String, Object>();
@@ -194,53 +243,37 @@ public class GOElitePlugin extends CytoscapePlugin {
 		long numTotal = 0;
 		debugWindow.append("Checking all nodes: " + nodeList.length + " for "
 				+ nodeAttributeCriteriaLabel + "\n");
-		for (int i : nodeList) {
+	
+		List< Node > finalNodeList = new java.util.LinkedList< Node >();
+		for( int i : nodeList  )
+		{
 			boolean value = false;
 			Node node = Cytoscape.getRootGraph().getNode(i);
 			if (nodeAttributes.hasAttribute(node.getIdentifier(),
 					nodeAttributeCriteriaLabel)) {
-				if (nodeAttributes.getStringAttribute(node.getIdentifier(), nodeAttributeCriteriaLabel)
-						.equals("null")) {
-					continue;
-				}
 				numTotal++;
+		
 				if (!bAcceptTrueValuesOnly
-						|| Boolean.valueOf(nodeAttributes.getStringAttribute(node
-								.getIdentifier(), nodeAttributeCriteriaLabel))) {
-					if (node.getIdentifier().length() > 0) {
-						if (bWriteMode) {
-							if (!bFirstValue) {
-								out.println();
-							} // opal server barfs on empty lines in numerator
-							// file
-							String key = "";
-			
-							if ( keyAttribute.equals( "ID" ) )
-							{
-								key = node.getIdentifier();
-							}
-							else
-							{
-								key = nodeAttributes.getStringAttribute( node.getIdentifier(), keyAttribute );
-							}
-							
-							debugWindow.append( ">" + key + "\t" + systemCode + "\n" );
-							out.write( key + "\t" + systemCode);
-						}
-						bFirstValue = false;
-						numHits++;
+						|| nodeAttributes.getBooleanAttribute(node
+								.getIdentifier(), nodeAttributeCriteriaLabel)) 
+				{
+					if (node.getIdentifier().length() > 0) 
+					{
+						finalNodeList.add( node );
 					}
 				}
 			}
+			
 		}
+			
+		generateInputFileFromNodeSet( pathToFile, systemCode, new HashSet< Node >( finalNodeList ), bWriteMode, keyAttribute, debugWindow );
+		
 		long[] nums = { numHits, numTotal };
-		if (bWriteMode) {
-			out.close();
-			fw.close();
-		}
-		debugWindow.append("done writing input file: " + numHits + " hits\n");
-		return (nums);
+		return( nums );
 	}
+	
+				
+
 	public GOElitePlugin() {
 		JMenuItem item = new JMenuItem("Run GO-Elite");
 		JMenu pluginMenu = Cytoscape.getDesktop().getCyMenus().getMenuBar()
