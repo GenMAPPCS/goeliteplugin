@@ -7,6 +7,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Vector;
@@ -14,6 +15,7 @@ import java.util.Vector;
 import javax.swing.JOptionPane;
 
 import cytoscape.Cytoscape;
+import cytoscape.logger.CyLogger;
 
 
 /**
@@ -54,6 +56,37 @@ class Utilities {
 		}
 		
 		return (newBytes);
+	}
+	// keeps adding numeric suffixes until the name is unique
+	public static String generateUniqueFilename(String filenameBase) {
+		int cntr = 0;
+		String x = filenameBase + ".txt";
+		while (new File(x).exists()) {
+			x = filenameBase + "_" + cntr + ".txt";
+			cntr++;
+		}
+		return (x);
+	}
+
+	public static boolean exists( URL u ){
+	    try {
+	    
+	      CyLogger.getLogger().debug( "exists: 1");
+	      String URLName = u.toString();
+	      HttpURLConnection.setFollowRedirects(false);
+	      // note : you may also need
+	      //        HttpURLConnection.setInstanceFollowRedirects(false)
+	      HttpURLConnection con =
+	         (HttpURLConnection) new URL(URLName).openConnection();
+	      con.setRequestMethod("HEAD");
+	      CyLogger.getLogger().debug( "exists: 2 " + con + " " );
+
+	      return (con.getResponseCode() == HttpURLConnection.HTTP_OK);
+	    }
+	    catch (Exception e) {
+	       e.printStackTrace();
+	       return false;
+	    }
 	}
 	public static Vector<String> getFileContents(URL u)
 	throws MalformedURLException, IOException {

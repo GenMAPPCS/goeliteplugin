@@ -2,11 +2,14 @@ package org.genmapp.goelite;
 
 import java.io.File;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.rmi.RemoteException;
 import java.util.Map;
 import java.util.Vector;
 
 import javax.swing.JTextArea;
+
+import cytoscape.logger.CyLogger;
 
 import edu.sdsc.nbcr.opal.AppServiceLocator;
 import edu.sdsc.nbcr.opal.AppServicePortType;
@@ -57,6 +60,8 @@ class WebService {
 		return( l );
 	}
 	static String APP_SERVICE_URL = "http://webservices.cgl.ucsf.edu/opal/services/GOEliteService";
+	static String OUTPUT_HEAD_URL = "http://webservices.rbvi.ucsf.edu:8080/";
+
 	public static AppServicePortType getService()
 			throws javax.xml.rpc.ServiceException {
 		AppServiceLocator findService = new AppServiceLocator();
@@ -178,61 +183,84 @@ class WebService {
 		}
 	}
 
+	public enum ReturnTypes
+	{
+		RESULT_FULL_GO,
+		RESULT_FULL_PATHWAY,
+		RESULT_PRUNED_GO_AND_PATHWAY,
+		RESULT_STDOUT,
+		RESULT_STDERR,
+		RESULT_LOG		
+	};
+	
 	// service can be set to null; this will cause a new service to be located
 	// and returned ( slow )
 	/*
 	 * returns a vector of URLs with the following elements at their respective
-	 * indices: 0 - results file url 1 - log file url
+	 * indices: 0 - results file url 1 - log file url 2 - 
 	 */
-	public static Vector<URL> getResults(String jobID,
+	
+	// build the URL for each possible result, return only the ones that exist on the server
+	//
+	// the numeratorFilePrefix is needed to reconstruct the names of the CompleteResults/ORA/ output
+	//   files on the server.  We could also grab the HTML for the directory and parse this to get those
+	//   output filenames.
+	public static URL[] getResults(String jobID, String numeratorFilePrefix,
 			AppServicePortType service, JTextArea statusWindow) {
 		try {
-			Vector<URL> vResultURL = new Vector<URL>();
+			URL[] vResultURL = new URL[ ReturnTypes.values().length ];
 			if (service == null) {
 				service = getService();
 			}
-
 			JobOutputType outputs = service.getOutputs(jobID);
 			OutputFileType[] files = outputs.getOutputFile();
-
 			URL resultsFileURL = null, logFileURL = null;
-
-			// process each output file that's sitting on server
-			for (int i = 0; i < files.length; i++) {
-				URL u = null;
-				System.out.println(files[i].getName());
-				if (files[i].getName().contains("GO-Elite_results")) {
-					// dig into the results folder to get the
-					// file we care about
-					u = new URL(files[i].getUrl().toString()
-							+ "/pruned-results_z-score_elite.txt");
-
-					vResultURL.add( u );
-
-				} 
-				else if ( files[i].getName().contains("GO-Elite_report.log") )
-				{
-					// these files reside at the top-level dir
-					u = new URL(files[i].getUrl().toString());
-					vResultURL.add( u );
-					statusWindow.append( "Go-elite-report.log: " + u );
-
-				}
-			} // ... end of "for"
-
-			// stdout.txt/stderr.txt
-			// XXX refactor this url, or better yet get it from appservice somehow
-			String topLevelDirPath = "http://webservices.rbvi.ucsf.edu:8080/" + jobID;
-			URL u = new URL( topLevelDirPath + "/stdout.txt" );
-			statusWindow.append( "u: " + u );
-			vResultURL.add( u );
+			CyLogger.getLogger().debug( "getting result files from webservice" );
 			
-			u = new URL( topLevelDirPath + "/stderr.txt" );
-			statusWindow.append( "u: " + u);
-			vResultURL.add( u );
+			String path = "";
+			for ( ReturnTypes val : ReturnTypes.values() )
+			{
+				switch( val )
+				{
+					case RESULT_FULL_GO:
+						path = OUTPUT_HEAD_URL + "/" + jobID + "/" + "GO-Elite_results/CompleteResults/ORA/" + 
+							numeratorFilePrefix + "-GO.txt";
+						break;
+					case RESULT_FULL_PATHWAY:
+						path = OUTPUT_HEAD_URL + "/" + jobID + "/" + "GO-Elite_results/CompleteResults/ORA/" + 
+							numeratorFilePrefix + "-local.txt";
+						break;
+					case RESULT_PRUNED_GO_AND_PATHWAY:
+						path = OUTPUT_HEAD_URL + "/" + jobID + "/" + "GO-Elite_results/pruned-results_z-score_elite.txt"; 
+						break;
+					case RESULT_STDOUT:
+						path = OUTPUT_HEAD_URL + "/" + jobID + "/" + "stdout.txt";
+						break;
+					case RESULT_STDERR:
+						path = OUTPUT_HEAD_URL + "/" + jobID + "/" + "stderr.txt";
+						break;
+					case RESULT_LOG:
+						path = OUTPUT_HEAD_URL + "/" + jobID + "/" + "GO-Elite_report.log";
+						break;
+				}
+				
+				CyLogger.getLogger().debug( val + " " + path );
+				CyLogger.getLogger().debug( "creating url" );
+ 
+				URL url = new URL( path );  // XXX need some sort of encoding for spaces!
+				CyLogger.getLogger().debug( "url: " + url );
 
+				if ( Utilities.exists( url ) )
+				{
+					CyLogger.getLogger().debug( "found" );
+					vResultURL[ val.ordinal() ] = url;
+				}
+				CyLogger.getLogger().debug( "ok" );
+
+			}
 			return (vResultURL);
 		} catch (Exception e) {
+			CyLogger.getLogger().error( e + "" );
 			return (null);
 		}
 	}

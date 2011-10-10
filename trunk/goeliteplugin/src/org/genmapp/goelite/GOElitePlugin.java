@@ -59,6 +59,7 @@ import cytoscape.command.CyCommandException;
 import cytoscape.command.CyCommandManager;
 import cytoscape.command.CyCommandResult;
 import cytoscape.data.CyAttributes;
+import cytoscape.logger.CyLogger;
 import cytoscape.plugin.CytoscapePlugin;
 
 //import org.pathvisio.wikipathways.WikiPathwaysClient;
@@ -123,6 +124,10 @@ public class GOElitePlugin extends CytoscapePlugin {
 		String paramString = CytoscapeInit.getProperties().getProperty(
 				NET_ATTR_SET_PREFIX + criteriaSet);
 		paramString = paramString.substring(1, paramString.length() - 1);
+		CyLogger.getLogger().debug( "getCriteria " + paramString );
+
+		// Example: [Node Color][ "18v14 log-fold" > 1.2::Label 1::#ffffff]
+		//   We want to extract "Label 1"
 		String[] temp = paramString.split("\\]\\[");
 		debugWindow.append("criteria for " + criteriaSet + " found "
 				+ temp.length);
@@ -137,8 +142,8 @@ public class GOElitePlugin extends CytoscapePlugin {
 			}
 
 			String[] tokens = criterion.split(":");
-			debugWindow.append("tokens[1]: " + tokens[1]);
-			criteriaNames.add(tokens[1]);
+			debugWindow.append("tokens[2]: " + tokens[2]);
+			criteriaNames.add(tokens[2]);
 		}
 		return ((String[]) criteriaNames.toArray(new String[criteriaNames
 				.size()]));
@@ -245,30 +250,53 @@ public class GOElitePlugin extends CytoscapePlugin {
 				+ nodeAttributeCriteriaLabel + "\n");
 	
 		List< Node > finalNodeList = new java.util.LinkedList< Node >();
+		debugWindow.append("Wassup"+ "\n" );
 		for( int i : nodeList  )
 		{
 			boolean value = false;
+			debugWindow.append("i: " + i + "\n");
 			Node node = Cytoscape.getRootGraph().getNode(i);
+			debugWindow.append("Node: " + node + "\n");
+			debugWindow.append("NodeId: " + node.getIdentifier() + "\n" );
+						
 			if (nodeAttributes.hasAttribute(node.getIdentifier(),
 					nodeAttributeCriteriaLabel)) {
+				debugWindow.append("has criteria\n");
 				numTotal++;
-		
+				Object o = nodeAttributes.getAttribute( node
+						.getIdentifier(), nodeAttributeCriteriaLabel );
+				debugWindow.append(" o = " + o );
+				
+				debugWindow.append(" o class= " + o.getClass() );
+				
+				boolean x = o.toString().equals( "true" );  
+				
+				debugWindow.append("x = " + x );
+				
 				if (!bAcceptTrueValuesOnly
-						|| nodeAttributes.getBooleanAttribute(node
-								.getIdentifier(), nodeAttributeCriteriaLabel)) 
+						|| x ) 
 				{
+					debugWindow.append("yep" + "\n" );
+
 					if (node.getIdentifier().length() > 0) 
 					{
+						numHits++;
+						debugWindow.append( node.getIdentifier() + " added" );
 						finalNodeList.add( node );
 					}
+				}
+				else
+				{
+					debugWindow.append( "nope" );
 				}
 			}
 			
 		}
-			
+		debugWindow.append( "numTotal that passed = " + numTotal );
 		generateInputFileFromNodeSet( pathToFile, systemCode, new HashSet< Node >( finalNodeList ), bWriteMode, keyAttribute, debugWindow );
 		
 		long[] nums = { numHits, numTotal };
+		debugWindow.append( "numHits " + numHits + " numTotal " + numTotal );
 		return( nums );
 	}
 	
