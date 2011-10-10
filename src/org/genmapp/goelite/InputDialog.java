@@ -1,6 +1,8 @@
 package org.genmapp.goelite;
 
 import javax.swing.JOptionPane;
+
+import java.awt.Color;
 import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.Dimension;
@@ -25,6 +27,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.Vector;
+import java.util.logging.Logger;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import cytoscape.CytoscapeInit;
 import cytoscape.data.CyAttributes;
@@ -51,6 +55,7 @@ import javax.swing.ListSelectionModel;
 import javax.swing.SwingConstants;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableColumn;
 
 import org.jdesktop.swingworker.SwingWorker;
@@ -110,17 +115,21 @@ public class InputDialog extends JDialog implements ActionListener {
 	JComboBox inputNetworkNumeratorComboBox = null, inputNetworkDenominatorComboBox = null,
 		inputNetworkKeyAttributeComboBox = null;
 	JLabel inputNetworkNumeratorDescriptor = null, inputNetworkDenominatorDescriptor = null, 	inputNetworkKeyAttributeDescriptor = null;
+
+	String resultName = null;
+	
 	// prepare input files
 	String geneListFilePath = "";
 	String denomFilePath = "";
-	String resultName = null;
-	String geneListFileName = "";
+	JTabbedPane resultsAnalysisNamePanel = null;
+	
 	class InputDialogWorker extends SwingWorker<StatusOutputType, Void>
 	{
+	
 		JButton rerunAnalysisButton = null, exportButton = null;
 		JTextField rerunAnalysisNumPermutations = null;
 		edu.sdsc.nbcr.opal.types.StatusOutputType status = null;
-		JTabbedPane resultsParentPanel = null;
+		JTabbedPane resultsAnalysisTypePanel = null;
 		JTextArea statusWindow = null, stdoutWindow = null,
 				stderrWindow = null;
 		AppServicePortType service = null;
@@ -131,13 +140,13 @@ public class InputDialog extends JDialog implements ActionListener {
 		int overrideNumPermutations = -1;   // -1 will default to using the dialog selection
 		
 		boolean bRunGONotPathwayAnalysis = false;
-		public InputDialogWorker( boolean bRunGONotPathwayAnalysis_, CloseableTabbedPane resultsParentPanel_, int numPermutations_ )
+		public InputDialogWorker( boolean bRunGONotPathwayAnalysis_, CloseableTabbedPane resultsAnalysisTypePanel_, int numPermutations_ )
 		{
 			bRunGONotPathwayAnalysis = bRunGONotPathwayAnalysis_;
 
 			// this stuff is common to both pathway and GO analyses for the given job
 			// **** Prepare results pane 			
-			resultsParentPanel = resultsParentPanel_;
+			resultsAnalysisTypePanel = resultsAnalysisTypePanel_;
 			overrideNumPermutations = numPermutations_;
 		}
 		
@@ -160,12 +169,11 @@ public class InputDialog extends JDialog implements ActionListener {
 				debugWindow.append("s2\n");
 
 
-				resultsParentPanel.addTab("Status", statusPanel);
-
+				resultsAnalysisTypePanel.addTab("Status", statusPanel);
+				resultsMasterPanel.setSelectedComponent( resultsAnalysisNamePanel );
+				resultsAnalysisNamePanel.setSelectedComponent( resultsAnalysisTypePanel );
+				resultsAnalysisTypePanel.setSelectedComponent( statusPanel );
 				
-				
-				// CytoPanel -> resultsMasterPanel "GO-Elite Results" ->
-				// resultsParentPanel ("Status"|"Pathway"|"GO")
 				debugWindow.append( "WebService.getService calledn" );
 				service = WebService.getService();
 				debugWindow.append( "WebService.getService returned = " + service );
@@ -212,7 +220,7 @@ public class InputDialog extends JDialog implements ActionListener {
 				debugWindow.append( "WebService.launchJob called\n" );
 				jobID = WebService.launchJob(args, service, statusWindow);
 				debugWindow.append( "WebService.launchJob returned with id = " + jobID + "\n" );
-				String serverUrl = "http://webservices.rbvi.ucsf.edu:8080/";
+				String serverUrl = WebService.OUTPUT_HEAD_URL;
 				statusWindow.append("Link to webservice job:\n "
 						+ serverUrl + jobID + "\n\n");
 				debugWindow.append("Link to webservice job: " + serverUrl
@@ -258,16 +266,34 @@ public class InputDialog extends JDialog implements ActionListener {
 			System.out.println("done!");
 			debugWindow.append("done! status = " + status + "\n");
 			try {
+			
+			
 
 				// print results in results panel
 				if (status.getCode() == 8) {
 					debugWindow.append("getting results!!!\n");
 
-					Vector<URL> vResultURL = WebService.getResults(jobID,
-							service, debugWindow);
+					String geneListFilePrefix = "";
+					Pattern p = Pattern.compile( "(.+(\\\\|/))*(.+)\\.txt" );
+					Matcher m = p.matcher( geneListFilePath );
+					if ( m.matches() )
+					{
+					  geneListFilePrefix = m.group( 3 );
+					  debugWindow.append( "prefix = " + geneListFilePrefix + "\n" );
+					}
+					else
+					{
+						// throw error
+						CyLogger.getLogger().error( "gene list file must end in .txt" );
+						return;
+					}
+					
+					URL[] vResultURL = WebService.getResults(jobID, geneListFilePrefix,
+							service, debugWindow );
 					debugWindow.append("results fetched: "
-							+ vResultURL.size() + " URLs\n");
+							+ vResultURL.length + " URLs\n");
 
+					// ******  grab results off server and put into simple data structures *****
 					Vector<String> logFileContents = new Vector<String>();
 					Vector<String> stdoutFileContents = new Vector<String>();
 					Vector<String> stderrFileContents = new Vector<String>();
@@ -275,95 +301,214 @@ public class InputDialog extends JDialog implements ActionListener {
 					Vector<String> pathwayResultsColumnNames = new Vector<String>();
 					Vector<Vector> GONameResultsRowData = new Vector<Vector>();
 					Vector<Vector> pathwayResultsRowData = new Vector<Vector>();
-
+					HashMap< String, Boolean > GOIDsToHighlight = new HashMap< String, Boolean >();
+					HashMap< String, Boolean > pathwayIDsToHighlight = new HashMap< String, Boolean >();
+					Vector< Boolean > vbGORowsToHighlight = new Vector< Boolean >(); // parallel array with GONameResultsRowData[]
+					Vector< Boolean > vbPathwayRowsToHighlight = new Vector< Boolean >();
 					// process each output file that's sitting on server
-					for (int i = 0; i < vResultURL.size(); i++) {
-						URL u = vResultURL.get(i);
+					InputStream is = null;
+					DataInputStream dis;
+					String s;
+					
+				    URL u = vResultURL[ WebService.ReturnTypes.RESULT_PRUNED_GO_AND_PATHWAY.ordinal() ];
+					debugWindow.append(u + "\n");
+					if ( null != u ) 
+					{
+						debugWindow.append("parsing pruned results\n");
+						statusWindow
+								.append("\nParsing pruned results table...\n");
+						Vector<String> fileContents = Utilities
+								.getFileContents(u);
+						Enumeration<String> contents = fileContents
+								.elements();
 
-						InputStream is = null;
-						DataInputStream dis;
-						String s;
+						boolean processingGONameResultsNotPathwayResults = bRunGONotPathwayAnalysis;
 
-						debugWindow.append(u + "\n");
-						if (u.getFile().contains(
-								"pruned-results_z-score_elite.txt")) {
-							debugWindow.append("parsing results table\n");
-							statusWindow
-									.append("\nParsing results table...\n");
-							Vector<String> fileContents = Utilities
-									.getFileContents(u);
-							Enumeration<String> contents = fileContents
-									.elements();
+						boolean bIsFirstLine = true;
 
-							boolean processingGONameResultsNotPathwayResults = true;
+						// the same filename)) could potentially hold both go or pathway results, but for us, we are only running one mode
+						//    per job so we know which result type to expect from this file
+						// header = 1st line:  rest = data  
+						//   may be some blank lines at end?
+						while (contents.hasMoreElements()) {
 
-							// the results file is arranged so that GO results are reported above the Pathway results
-							// When we see a header row that has "MAPP" as its 3rd column, we know that we've switched to Pathway results
-							while (contents.hasMoreElements()) {
+							String line = (String) contents
+									.nextElement();
+							if ( bIsFirstLine ) { bIsFirstLine = false; continue; }
+						
+							Vector<String> columnsAsVector = new Vector<String>();
+							String[] rowData = (line).split("\t");
+							if ( rowData.length < 3 ) { continue; }
+							
+							// it's a data line
+							if (processingGONameResultsNotPathwayResults) 
+							{
+								String GONameAndID = rowData[ 2 ];
+								CyLogger.getLogger().debug( "try and highlight: " + GONameAndID );
 
-								String line = (String) contents
-										.nextElement();
-								// System.out.println(line);
-								Vector<String> columnsAsVector = new Vector<String>();
-								String[] rowData = (line).split("\t");
-
-								if (rowData.length < 2) {
-									continue;
-								} // ignore blank lines
-
-								if (rowData[2].contains("MAPP")) 
+								Pattern pat = Pattern.compile( ".+\\((.+)\\)");
+								Matcher match = pat.matcher( GONameAndID );
+								if ( match.matches() )
 								{
-									debugWindow.append( "switching to pathway results");
-									processingGONameResultsNotPathwayResults = false;
+								  String GOID = match.group( 1 );
+								  CyLogger.getLogger().debug( "highlight: " + GOID );
+								  
+								  GOIDsToHighlight.put( GOID, Boolean.TRUE );
 								}
-
-								// is this a column header?
-								if (processingGONameResultsNotPathwayResults
-										&& GONameResultsColumnNames.size() == 0) {
-									
-									// GO results found: add results
-									GONameResultsColumnNames.addAll(Arrays
-											.asList(rowData));
-									
-									continue;
-								} else if (!processingGONameResultsNotPathwayResults
-										&& pathwayResultsColumnNames.size() == 0) {
-									pathwayResultsColumnNames.addAll(Arrays
-											.asList(rowData));
-									continue;
+								else
+								{
+									CyLogger.getLogger().error( "Couldn't parse: " + GONameAndID + " for line " + line );
 								}
-
-								// it's a data line
-								if (processingGONameResultsNotPathwayResults) {
-									GONameResultsRowData
-											.add(new Vector<String>(Arrays
-													.asList(rowData)));
-								} else {
-									pathwayResultsRowData
-											.add(new Vector<String>(Arrays
-													.asList(rowData)));
-								}
+							} 
+							else 
+							{
+								// pathway info is given as
+								// 3rd column = MAPP name
+								// ( text name ):( pathway id )
+								String[] pathwayNameAndID = rowData[ 2 ].split( ":" );
+								String pathwayID = pathwayNameAndID[ 1 ];
+								pathwayIDsToHighlight.put( pathwayID, Boolean.TRUE );
+								CyLogger.getLogger().debug( "highlight pathway: " + pathwayID );
 							}
-						} else if (u.getFile().contains(
-								"GO-Elite_report.log")) {
-							logFileContents = Utilities.getFileContents(u);
-							continue;
-						} else if (u.getFile().contains("stdout.txt")) {
-							debugWindow.append("stdout.txt found\n");
-
-							stdoutFileContents = Utilities
-									.getFileContents(u);
-							continue;
-						} else if (u.getFile().contains("stderr.txt")) {
-							debugWindow.append("stderr.txt found\n");
-
-							stderrFileContents = Utilities
-									.getFileContents(u);
-							continue;
 						}
-					} // ... end of "for"
+					} 
+
+					u = vResultURL[ WebService.ReturnTypes.RESULT_FULL_GO.ordinal() ];
+					debugWindow.append(u + "\n");
+					if ( null != u ) 
+					{
+						
+						debugWindow.append("parsing full go results\n");
+						Vector<String> fileContents = Utilities
+								.getFileContents(u);
+						Enumeration<String> contents = fileContents
+								.elements();
+
+						// the results file is arranged so that GO results are reported above the Pathway results
+						// When we see a header row that has "GOID" as its 1st column, we know that we've switched to Pathway results
+						boolean bStartProcessing = false;
+						long GORowsToHighlight = 0;
+						while (contents.hasMoreElements()) 
+						{
+
+							String line = (String) contents
+									.nextElement();
+							// System.out.println(line);
+							Vector<String> columnsAsVector = new Vector<String>();
+							String[] rowData = (line).split("\t");
+
+							if ( !bStartProcessing && rowData[ 0 ].contains("GOID") ) 
+							{
+								bStartProcessing = true;
+								GONameResultsColumnNames.addAll(Arrays
+										.asList(rowData));
+								continue;
+							}
+							if ( !bStartProcessing ) { continue; }
+							
+							if ( GOIDsToHighlight.containsKey( rowData[ 0 ] ) && 
+							     ( Boolean.TRUE == GOIDsToHighlight.get( rowData[ 0 ] ) ) )
+							{
+								GORowsToHighlight++;
+								vbGORowsToHighlight.add( Boolean.TRUE );
+							}
+							else
+							{
+								vbGORowsToHighlight.add( Boolean.FALSE );
+							}
+							
+							GONameResultsRowData
+										.add(new Vector<String>(Arrays
+												.asList(rowData)));
+							
+						}
+						CyLogger.getLogger().debug( "GORowsToHighlight " + GORowsToHighlight );
+					}
+					
+					u = vResultURL[ WebService.ReturnTypes.RESULT_FULL_PATHWAY.ordinal() ];
+					debugWindow.append(u + "\n");
+					if ( null != u ) 
+					{
+						
+						debugWindow.append("parsing full pathway results\n");
+						Vector<String> fileContents = Utilities
+								.getFileContents(u);
+						Enumeration<String> contents = fileContents
+								.elements();
+
+						// the results file is arranged so that there is a lengthy header
+						// the header ends / column names start with "^MAPP Name"
+						boolean bStartProcessing = false;
+						long pathwayRowsToHighlight = 0;
+						while (contents.hasMoreElements()) 
+						{
 
 							
+							String line = (String) contents
+									.nextElement();
+							// System.out.println(line);
+							Vector<String> columnsAsVector = new Vector<String>();
+							String[] rowData = (line).split("\t");
+
+							if ( !bStartProcessing && rowData[ 0 ].contains("MAPP Name") ) 
+							{
+								bStartProcessing = true;
+								pathwayResultsColumnNames.addAll(Arrays
+										.asList(rowData));
+								continue;
+							}
+							if ( !bStartProcessing ) { continue; }
+							
+							// Pathway ID is buried in the MAPPName   ( text name ):( id )
+							// Triacylglyceride Synthesis:WP386
+
+							CyLogger.getLogger().debug( "rowdata[0] " + rowData[0] );
+
+							String[] pathwayTextNameAndID = rowData[ 0 ].split( ":" );
+							String pathwayID = pathwayTextNameAndID[1];
+							CyLogger.getLogger().debug( "pathwayTextNameAndID " + pathwayID);
+
+							if ( pathwayIDsToHighlight.containsKey( pathwayID ) && 
+							     ( Boolean.TRUE == pathwayIDsToHighlight.get( pathwayID ) ) )
+							{
+								pathwayRowsToHighlight++;
+								vbPathwayRowsToHighlight.add( Boolean.TRUE );
+							}
+							else
+							{
+								vbPathwayRowsToHighlight.add( Boolean.FALSE );
+							}
+							
+							pathwayResultsRowData
+										.add(new Vector<String>(Arrays
+												.asList(rowData)));
+							
+						}
+						CyLogger.getLogger().debug( "pathwayRowsToHighlight " + pathwayRowsToHighlight );
+					}
+					
+					u = vResultURL[ WebService.ReturnTypes.RESULT_LOG.ordinal() ];
+					if ( null != u )
+					{
+						logFileContents = Utilities.getFileContents(u);
+					} 
+					
+					u = vResultURL[ WebService.ReturnTypes.RESULT_STDOUT.ordinal() ];
+					if ( null != u ) 
+					{
+						stdoutFileContents = Utilities.getFileContents( u );
+					} 
+					
+					u = vResultURL[ WebService.ReturnTypes.RESULT_STDERR.ordinal() ];
+					if ( null != u ) 
+					{
+						stderrFileContents = Utilities.getFileContents( u );
+					}
+
+					
+						
+					
+					// *****  process results *****							
 					if ( GONameResultsRowData.size() == 0 && bRunGONotPathwayAnalysis )
 					{
 						statusWindow.append( "No GO results found\n" );
@@ -475,19 +620,34 @@ public class InputDialog extends JDialog implements ActionListener {
 									return false;
 								}
 							};
+							debugWindow.append( "Num rows to highlight GO:" + vbGORowsToHighlight.size() );
+							long  hits = 0;
+							for( int i =0 ; i< vbGORowsToHighlight.size(); i++ )
+							{
+								if ( vbGORowsToHighlight.get( i ) == Boolean.TRUE ) { hits++; }
+							}
+							CyLogger.getLogger().debug( "vbGORowsToHighlight: " + hits + " / " + vbGORowsToHighlight.size() );
+							
+							resultsTable.setDefaultRenderer( Object.class, new CustomTableCellRenderer( vbGORowsToHighlight ) );
 
 							// hide some columns
-							int[] GONameColumnsToHide = {0, 1, 5, 6, 7, 11, 12,
-									13};
-							for (int j = GONameColumnsToHide.length - 1; j >= 0; j--) {
+							// the indices are adjusted to account for the fact that they shift while deleting is going on
+							//int[] GONameColumnsToHide = {0, 1, 5, 6, 7, 11, 12,
+							//		13};
+							int [] GONameColumnsToHide = {}; //
+							
+							for (int j = GONameColumnsToHide.length - 1; j >= 0; j--) 
+							{
 								TableColumn column = resultsTable
 										.getColumnModel().getColumn(
 												GONameColumnsToHide[j]);
+								CyLogger.getLogger().debug( "hiding: " + GONameResultsColumnNames.get( j ) );
 								resultsTable.removeColumn(column);
 							}
 
 						}
 					}
+					
 					else
 					{
 						debugWindow.append( "3\n");
@@ -500,16 +660,22 @@ public class InputDialog extends JDialog implements ActionListener {
 							debugWindow.append("processing pathwayResults\n");
 							resultsTable = new JTable(
 									pathwayResultsRowData,
-									pathwayResultsColumnNames) {
+									pathwayResultsColumnNames) 
+							{
 								public boolean isCellEditable(int rowIndex,
-										int vColIndex) {
+										int vColIndex) 
+								{
 									return false;
 								}
 							};
+							
+							resultsTable.setDefaultRenderer( Object.class, new CustomTableCellRenderer( vbPathwayRowsToHighlight ) );
 	
 							// hide the same columns
-							int[] pathwayColumnsToHide = {0, 1, 5, 6, 7, 11,
-									12, 13};
+							//int[] pathwayColumnsToHide = {0, 1, 5, 6, 7, 11,
+							//		12, 13};
+							int [] pathwayColumnsToHide = {};
+							
 							for (int j = pathwayColumnsToHide.length - 1; j >= 0; j--) {
 								TableColumn column = resultsTable
 										.getColumnModel().getColumn(
@@ -556,8 +722,19 @@ public class InputDialog extends JDialog implements ActionListener {
 							debugWindow.append( "4\n");	
 						}
 					}
+					
 					debugWindow.append("scrollpane...\n");
 
+					// Schematic for nested panel:
+					// GO-Elite-Results   ( resultsMasterPanel )
+					// + mynetwork_0  ( resultsAnalysisNamePanel  )
+					// +++ GO   ( resultsAnalysisTypePanel -- thread 1 )
+					// +++++ Status   
+					// +++++ Results  ( resultsWrapperPanel -- thread 1 )
+					// +++ Pathway  ( resultsAnalysisTypePanel -- thread 2)
+					// +++++ Status
+					// +++++ Results  ( resultsWrapperPanel -- thread 2 )
+					
 					JScrollPane resultsScrollPane = new JScrollPane( resultsTable );
 					
 					JPanel resultsWrapperPanel = new JPanel();
@@ -583,14 +760,17 @@ public class InputDialog extends JDialog implements ActionListener {
 					optionsPanel.add( exportButton );
 					
 					resultsWrapperPanel.add( optionsPanel );
-					resultsParentPanel.addTab("Results", resultsWrapperPanel );
+					resultsAnalysisTypePanel.addTab("Results", resultsWrapperPanel );
 					
-					debugWindow.append("scrollpane 4...\n");
-
-					resultsMasterPanel.setSelectedComponent( resultsParentPanel );
-					resultsParentPanel.setSelectedComponent( resultsWrapperPanel );                    
-                    CommandHandler.changeResultStatus(resultName, true); 
-                    CommandHandler.changeResultTabIndex(resultName, bRunGONotPathwayAnalysis ? "GO" : "Pathway" ); 
+					debugWindow.append("setselectedcomponent resultsWrapperPanel...\n");
+					
+					resultsMasterPanel.setSelectedComponent( resultsAnalysisNamePanel );					
+					resultsAnalysisNamePanel.setSelectedComponent( resultsAnalysisTypePanel );
+                    resultsAnalysisTypePanel.setSelectedComponent( resultsWrapperPanel );
+                    
+					CommandHandler.changeResultStatus(resultName, true); 
+					debugWindow.append("change result tab idx...\n");
+					CommandHandler.changeResultTabIndex( resultName, bRunGONotPathwayAnalysis ? "GO" : "Pathway" ); 
 					debugWindow.append("log file...\n");
 
 					/*
@@ -600,7 +780,7 @@ public class InputDialog extends JDialog implements ActionListener {
 						statusWindow.append(logFileContents.elementAt(j)
 								+ "\n");
 					}
-
+					
 					debugWindow.append("stdout...\n");
 
 					/*
@@ -617,16 +797,13 @@ public class InputDialog extends JDialog implements ActionListener {
 								stdoutWindow);
 						stdoutPanel.add(stdoutScroll);
 
-						resultsParentPanel.addTab("Stdout", stdoutPanel);
+						resultsAnalysisTypePanel.addTab("Stdout", stdoutPanel);
 
 						for (int j = 0; j < stdoutFileContents.size(); j++) {
 							stdoutWindow.append(stdoutFileContents
 									.elementAt(j)
 									+ "\n");
-						}
-						resultsMasterPanel.setSelectedComponent( resultsParentPanel );
-						resultsParentPanel.setSelectedComponent( resultsWrapperPanel );                    
-	     
+						}	     
 					}
 
 					debugWindow.append("stderr...\n");
@@ -642,7 +819,7 @@ public class InputDialog extends JDialog implements ActionListener {
 								stderrWindow);
 						stderrPanel.add(stderrScroll);
 
-						resultsParentPanel.addTab("Stderr", stderrPanel);
+						resultsAnalysisTypePanel.addTab("Stderr", stderrPanel);
 
 						for (int j = 0; j < stderrFileContents.size(); j++) {
 							stderrWindow.append(stderrFileContents
@@ -651,6 +828,7 @@ public class InputDialog extends JDialog implements ActionListener {
 						}
 			            CommandHandler.changeResultStatus(resultName, false ); 
 		                CommandHandler.changeResultTabIndex(resultName, "Stderr" ); 
+						resultsAnalysisTypePanel.setSelectedComponent( stderrPanel );                    
 
 					}
 
@@ -1142,16 +1320,6 @@ public class InputDialog extends JDialog implements ActionListener {
 
 	}
 
-	// keeps adding numeric suffixes until the name is unique
-	String generateUniqueFilename(String filenameBase) {
-		int cntr = 0;
-		String x = filenameBase + ".txt";
-		while (new File(x).exists()) {
-			x = filenameBase + "_" + cntr + ".txt";
-			cntr++;
-		}
-		return (x);
-	}
 
 	public void actionPerformed(ActionEvent evt_) 
 	{
@@ -1229,10 +1397,11 @@ public class InputDialog extends JDialog implements ActionListener {
 					}
 
 					for (String criteria : criteriaList) {
-						geneListFileName = criteria;
+						String geneListFileName = criteria;
 						geneListFilePath = pluginDir + "/" + geneListFileName;
-						geneListFilePath = generateUniqueFilename(geneListFilePath);
-	
+						geneListFilePath = Utilities.generateUniqueFilename(geneListFilePath);
+						CyLogger.getLogger().debug( "geneListFileName " + geneListFileName );
+						CyLogger.getLogger().debug( "geneListFilePath " + geneListFilePath );
 						debugWindow.append("launching job for criteria: "
 								+ criteria);
 						// if criteria selected, generate files first
@@ -1248,8 +1417,8 @@ public class InputDialog extends JDialog implements ActionListener {
 						String denomFileName = criteria + "_denom";
 						denomFilePath = pluginDir + "/" + denomFileName;
 						debugWindow.append("generating input denominator\n");
-						denomFilePath = generateUniqueFilename(pluginDir + "/"
-								+ denomFileName);
+						denomFilePath = Utilities.generateUniqueFilename(pluginDir + "/"
+								+ denomFileName + ".txt");
 						GOElitePlugin.generateInputFileFromNetworkCriteria(
 								denomFilePath, systemCode,
 								(String) selectedCriteriaSet, (String) criteria,
@@ -1270,9 +1439,9 @@ public class InputDialog extends JDialog implements ActionListener {
 					String networkID = networkIDPlusTitle.split( "\\s+" )[ 0 ];
 					CyNetwork network = Cytoscape.getNetwork( networkID );
 
-					geneListFileName = network.getTitle();
+					String geneListFileName = network.getTitle();
 					geneListFilePath = pluginDir + "/" + geneListFileName;
-					geneListFilePath = generateUniqueFilename(geneListFilePath);
+					geneListFilePath = Utilities.generateUniqueFilename(geneListFilePath);
 
 					debugWindow.append("launching job for network: "
 								+ networkID );
@@ -1301,7 +1470,7 @@ public class InputDialog extends JDialog implements ActionListener {
 					String denomFileName =  "network_denom";
 					denomFilePath = pluginDir + "/" + denomFileName;
 					debugWindow.append("generating input denominator\n");
-					denomFilePath = generateUniqueFilename(pluginDir + "/"
+					denomFilePath = Utilities.generateUniqueFilename(pluginDir + "/"
 							+ denomFileName);
 					GOElitePlugin.generateInputFileFromNodeSet(
 							denomFilePath, systemCode,
@@ -1349,33 +1518,54 @@ public class InputDialog extends JDialog implements ActionListener {
 	void launchJob(final String geneListFilePath, final String denomFilePath,
 			int overrideNumPermutations_ ) {
 		debugWindow.append("launchJob start\n");
-
+		CyLogger.getLogger().debug( "1" );
 		CytoPanel cytoPanel = Cytoscape.getDesktop().getCytoPanel(
 				SwingConstants.EAST);
+		CyLogger.getLogger().debug( "2" );
 		if (resultsMasterPanel == null) {
 			resultsMasterPanel = new CloseableTabbedPane();
 		}
+		CyLogger.getLogger().debug( "3" );
 		
 		if (!bResultsMasterPanelAlreadyAdded) {
 			cytoPanel.add("GO-Elite Results", resultsMasterPanel);
 			bResultsMasterPanelAlreadyAdded = true;
 		}
+
 		if ( cytoPanel.getState().equals(CytoPanelState.HIDE ))
 		{
 			cytoPanel.setState(CytoPanelState.DOCK);
 		}
-		
-		// update ResultsPanel in Workspaces
-        resultName = geneListFileName.substring(0, geneListFileName.lastIndexOf(".")); 
+		CyLogger.getLogger().debug( "5" );
 
+		// update ResultsPanel in Workspaces
+		String geneListFilePrefix = "";
+		Pattern p = Pattern.compile( "(.+(\\\\|/))*(.+)\\.txt" );
+		Matcher m = p.matcher( geneListFilePath );
+		if ( m.matches() )
+		{
+		  geneListFilePrefix = m.group( 3 );
+		  debugWindow.append( "prefix = " + geneListFilePrefix + "\n" );
+		}
+		else
+		{
+			// throw error
+			CyLogger.getLogger().error( "gene list file must end in .txt" );
+			return;
+		}
+
+        resultName = geneListFilePrefix; 
+        CyLogger.getLogger().debug( resultName );
+		
 		// INNER class: SwingWorker - only needed here inside this function
-		CloseableTabbedPane resultsParentPanel = new CloseableTabbedPane(); 
+		resultsAnalysisNamePanel = new CloseableTabbedPane(); 
 		CloseableTabbedPane pathwayPanel = new CloseableTabbedPane();
 		CloseableTabbedPane GOPanel = new CloseableTabbedPane();
-		resultsParentPanel.add( "GO", GOPanel );
-		resultsParentPanel.add( "Pathway", pathwayPanel );
-		resultsMasterPanel.add( resultName, resultsParentPanel );  // should be name of network/file
-
+		resultsAnalysisNamePanel.add( "GO", GOPanel );
+		resultsAnalysisNamePanel.add( "Pathway", pathwayPanel );
+		resultsMasterPanel.add( resultName, resultsAnalysisNamePanel );  // should be name of network/file
+		CyLogger.getLogger().debug( "3" );
+		
     	debugWindow.append( "cytopanel contents:\n");
     	for( int i =0; i<resultsMasterPanel.getTabCount();i++ )
     	{
@@ -1442,7 +1632,28 @@ public class InputDialog extends JDialog implements ActionListener {
 		}
 
 	}
+	 public class CustomTableCellRenderer extends DefaultTableCellRenderer
+	 {
+		 Vector< Boolean > vbHighlightRow= null;
+	 
+		 CustomTableCellRenderer( Vector< Boolean> vbHighlightRow_ ) { vbHighlightRow = vbHighlightRow_; }
 
+		 public Component getTableCellRendererComponent (JTable table, 
+				 Object obj, boolean isSelected, boolean hasFocus, int row, int column) 
+		 {
+			 Component cell = super.getTableCellRendererComponent(table, obj, isSelected, hasFocus, row, column);
+		  
+			 if ( vbHighlightRow.get( row ) == Boolean.TRUE ) 
+			 {  
+				 cell.setBackground( Color.yellow );
+			 }
+			 else
+			 {
+				 cell.setBackground( Color.white );
+			 }
+			 return cell;
+		 }
+	 }
 	/*
 	 * Listener for row selection in Pathway results table. Useful for
 	 * responding to clicks on pathway results.
