@@ -127,9 +127,10 @@ public class InputDialog extends JDialog implements ActionListener {
 	{
 	
 		JButton rerunAnalysisButton = null, exportButton = null;
+		JComboBox rerunAnalysisZScorePruningMethod = null;
 		JTextField rerunAnalysisNumPermutations = null;
 		edu.sdsc.nbcr.opal.types.StatusOutputType status = null;
-		JTabbedPane resultsAnalysisTypePanel = null;
+		CloseableTabbedPane resultsAnalysisTypePanel = null;
 		JTextArea statusWindow = null, stdoutWindow = null,
 				stderrWindow = null;
 		AppServicePortType service = null;
@@ -138,9 +139,10 @@ public class InputDialog extends JDialog implements ActionListener {
 		
 		// go-elite user parameters:  these override the ones selected in the dialog 
 		int overrideNumPermutations = -1;   // -1 will default to using the dialog selection
-		
+		String overrideZScorePruningMethod = "";
 		boolean bRunGONotPathwayAnalysis = false;
-		public InputDialogWorker( boolean bRunGONotPathwayAnalysis_, CloseableTabbedPane resultsAnalysisTypePanel_, int numPermutations_ )
+		public InputDialogWorker( boolean bRunGONotPathwayAnalysis_, CloseableTabbedPane resultsAnalysisTypePanel_, 
+				int numPermutations_, String zScorePruningMethod_ )
 		{
 			bRunGONotPathwayAnalysis = bRunGONotPathwayAnalysis_;
 
@@ -148,6 +150,7 @@ public class InputDialog extends JDialog implements ActionListener {
 			// **** Prepare results pane 			
 			resultsAnalysisTypePanel = resultsAnalysisTypePanel_;
 			overrideNumPermutations = numPermutations_;
+			overrideZScorePruningMethod = zScorePruningMethod_;
 		}
 		
 		public StatusOutputType doInBackground() {
@@ -202,9 +205,11 @@ public class InputDialog extends JDialog implements ActionListener {
 				args.put(WebService.ARG_NUM_PERMUTATIONS, 
 						"" + numPermutations );
 				args.put(WebService.ARG_PRUNING_ALGORITHM,
+						overrideZScorePruningMethod.length() == 0 ?
 						vPruningAlgorithms[new Integer(layoutProperties
 								.getValue("go_pruning_algorithm"))
-								.intValue()]);
+								.intValue()] :
+						  overrideZScorePruningMethod );
 				args.put(WebService.ARG_ANALYSIS_TYPE,
 						( bRunGONotPathwayAnalysis ? "GeneOntology" : "Pathways" ) );
 				args.put(WebService.ARG_PVAL_THRESH, new String(
@@ -523,15 +528,19 @@ public class InputDialog extends JDialog implements ActionListener {
 					debugWindow.append( "populating tables\n");
 
 					// actionlistener to handle rerunning of analysis from results panel
-					ActionListener rerunAnalysisActionListener = new ActionListener() 
+					ActionListener rerunAnalysisActionListener = new ActionListener( ) 
 					{
 						
 						public void actionPerformed( ActionEvent e )
 						{
 							// edit # of permutations
 							int numPermutations = new Integer( rerunAnalysisNumPermutations.getText() ).intValue();
+							String zScorePruningMethod = ( String ) rerunAnalysisZScorePruningMethod.getSelectedItem();
+							CyLogger.getLogger().debug( "override z-score pruning: " + zScorePruningMethod );
+							
 							// rerun the analysis with new permutations #
-							launchJob(geneListFilePath, denomFilePath, numPermutations );
+							launchJob(geneListFilePath, denomFilePath, numPermutations, zScorePruningMethod, resultsAnalysisTypePanel,
+									bRunGONotPathwayAnalysis );
 
 						}
 					};
@@ -747,6 +756,10 @@ public class InputDialog extends JDialog implements ActionListener {
 					optionsPanel.add( new JLabel( "# Permutations" ) );
 					rerunAnalysisNumPermutations = new JTextField( "0", 3 );
 					optionsPanel.add( rerunAnalysisNumPermutations );
+					
+					optionsPanel.add( new JLabel( "z-score pruning method:" ) );
+					rerunAnalysisZScorePruningMethod = new JComboBox( vPruningAlgorithms );
+					optionsPanel.add( rerunAnalysisZScorePruningMethod );
 					debugWindow.append("scrollpane 2...\n");
 
 					rerunAnalysisButton = new JButton( "Rerun" );
@@ -869,7 +882,7 @@ public class InputDialog extends JDialog implements ActionListener {
 	static String vGeneSystemCodes[] = {new String("En"), new String("L"),
 			new String("D"), new String("Tb"), new String("X")};
 	static String vPruningAlgorithms[] = {new String("z-score"),
-			new String("gene number"), new String("combination")};
+			new String("\"gene number\""), new String("combination")};
 	
 	public static String[] getSpeciesCodes() {
 		return (vSpecies);
@@ -1468,8 +1481,8 @@ public class InputDialog extends JDialog implements ActionListener {
 					// for denominator, use all nodes in the selected network
 					Set< Node > denomNodes = new java.util.HashSet<Node>( network.nodesList() );
 					String denomFileName =  "network_denom";
-					denomFilePath = pluginDir + "/" + denomFileName;
-					debugWindow.append("generating input denominator\n");
+					denomFilePath = pluginDir + ")/" + denomFileName;
+					debugWindow.append("generating in)put denominator\n");
 					denomFilePath = Utilities.generateUniqueFilename(pluginDir + "/"
 							+ denomFileName);
 					GOElitePlugin.generateInputFileFromNodeSet(
@@ -1512,11 +1525,17 @@ public class InputDialog extends JDialog implements ActionListener {
 
 	
 	void launchJob(final String geneListFilePath, final String denomFilePath ) {
-		launchJob( geneListFilePath, denomFilePath, -1 );
+		launchJob( geneListFilePath, denomFilePath, -1, "", null, true );
 	}
 	
+	// there are two modes:
+	// 1 - run a fresh run ( this fires off GO and Pathway jobs separately )
+	// 2 - rerun an analysis ( this fires off one of GO / pathway using the same params as before except with a few overrides explicitly
+	//     passed in:  it also reuses an analysisTypePanel for output display )
 	void launchJob(final String geneListFilePath, final String denomFilePath,
-			int overrideNumPermutations_ ) {
+			int overrideNumPermutations, String overrideZScorePruningMethod,
+			CloseableTabbedPane analysisTypePanelToReuse, boolean bRunGONotPathway ) 
+	{
 		debugWindow.append("launchJob start\n");
 		CyLogger.getLogger().debug( "1" );
 		CytoPanel cytoPanel = Cytoscape.getDesktop().getCytoPanel(
@@ -1558,31 +1577,54 @@ public class InputDialog extends JDialog implements ActionListener {
         CyLogger.getLogger().debug( resultName );
 		
 		// INNER class: SwingWorker - only needed here inside this function
-		resultsAnalysisNamePanel = new CloseableTabbedPane(); 
-		CloseableTabbedPane pathwayPanel = new CloseableTabbedPane();
-		CloseableTabbedPane GOPanel = new CloseableTabbedPane();
-		resultsAnalysisNamePanel.add( "GO", GOPanel );
-		resultsAnalysisNamePanel.add( "Pathway", pathwayPanel );
-		resultsMasterPanel.add( resultName, resultsAnalysisNamePanel );  // should be name of network/file
-		CyLogger.getLogger().debug( "3" );
+        if ( analysisTypePanelToReuse == null )
+        {
+        	// run both analyses, GO and Pathway
+			resultsAnalysisNamePanel = new CloseableTabbedPane(); 
+			CloseableTabbedPane pathwayPanel = new CloseableTabbedPane();
+			CloseableTabbedPane GOPanel = new CloseableTabbedPane();
+			resultsAnalysisNamePanel.add( "GO", GOPanel );
+			resultsAnalysisNamePanel.add( "Pathway", pathwayPanel );
+			resultsMasterPanel.add( resultName, resultsAnalysisNamePanel );  // should be name of network/file
+			CyLogger.getLogger().debug( "3" );
 		
-    	debugWindow.append( "cytopanel contents:\n");
-    	for( int i =0; i<resultsMasterPanel.getTabCount();i++ )
-    	{
-    		debugWindow.append( resultsMasterPanel.getTitleAt(i) + "\n" );
-    	}
+	    	debugWindow.append( "cytopanel contents:\n");
+	    	for( int i =0; i<resultsMasterPanel.getTabCount();i++ )
+	    	{
+	    		debugWindow.append( resultsMasterPanel.getTitleAt(i) + "\n" );
+	    	}
 
-		CommandHandler.updateResultsPanel(resultName, false, "GO-Elite Results", resultName, geneListFilePath );
-		
-		InputDialogWorker pathwayAnalysisWorker = 
-			new InputDialogWorker( false, pathwayPanel, overrideNumPermutations_ );
-		InputDialogWorker GOAnalysisWorker = 
-			new InputDialogWorker( true, GOPanel, overrideNumPermutations_ );
-		debugWindow.append("executing pathway worker\n");
-		pathwayAnalysisWorker.execute();
-		debugWindow.append("executing GO Analysis worker\n");
-		GOAnalysisWorker.execute();
-		debugWindow.append("done executing workers\n");
+	    	CommandHandler.updateResultsPanel(resultName, false, "GO-Elite Results", resultName, geneListFilePath );
+
+        
+     		InputDialogWorker pathwayAnalysisWorker = 
+     			new InputDialogWorker( false, pathwayPanel, overrideNumPermutations, overrideZScorePruningMethod );
+     		InputDialogWorker GOAnalysisWorker = 
+     			new InputDialogWorker( true, GOPanel, overrideNumPermutations, overrideZScorePruningMethod );
+     		debugWindow.append("executing pathway worker\n");
+     		pathwayAnalysisWorker.execute();
+     		debugWindow.append("executing GO Analysis worker\n");
+     		GOAnalysisWorker.execute();
+     		debugWindow.append("done executing workers\n");
+        }
+        else
+        {
+        	// just reruns one of either GO/Pathway analysis
+    		analysisTypePanelToReuse.removeAll();
+    		CyLogger.getLogger().debug( "creating analysisWorker: " + bRunGONotPathway + " " + analysisTypePanelToReuse + " " + 
+    				overrideNumPermutations + " " + overrideZScorePruningMethod + "\n");
+    		InputDialogWorker analysisWorker = 
+     			new InputDialogWorker( bRunGONotPathway,
+     					analysisTypePanelToReuse, overrideNumPermutations, overrideZScorePruningMethod );
+
+    		CyLogger.getLogger().debug( "executing analysisWorker\n");
+
+    		analysisWorker.execute();
+    		
+    		CyLogger.getLogger().debug( "done analysisWorker\n");
+
+    	
+        }
 	}
 
 	public void resizeColumns(JTable table) 
