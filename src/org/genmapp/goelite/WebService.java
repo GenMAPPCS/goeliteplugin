@@ -1,6 +1,7 @@
 package org.genmapp.goelite;
 
 import java.io.File;
+import java.net.URI;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.rmi.RemoteException;
@@ -34,7 +35,6 @@ class WebService {
 	public static String ARG_GENELIST_FILE = "genelistfile";
 	public static String ARG_DENOM_FILE = "denomfile";
 	public static String ARG_SPECIES = "species";
-	public static String ARG_ID_SYSTEM = "idsystem";
 	public static String ARG_NUM_PERMUTATIONS = "numperm";
 	public static String ARG_PRUNING_ALGORITHM = "pruningalgorithm";
 	public static String ARG_PVAL_THRESH = "pvalthresh";
@@ -48,7 +48,6 @@ class WebService {
 		l.add( ARG_GENELIST_FILE );
 		l.add( ARG_DENOM_FILE ); 
 		l.add( ARG_SPECIES );
-		l.add( ARG_ID_SYSTEM );
 		l.add( ARG_NUM_PERMUTATIONS );
 		l.add( ARG_PRUNING_ALGORITHM );
 		l.add( ARG_PVAL_THRESH );
@@ -208,6 +207,7 @@ class WebService {
 	public static URL[] getResults(String jobID, String numeratorFilePrefix,
 			AppServicePortType service, JTextArea statusWindow) {
 		try {
+			numeratorFilePrefix = java.net.URLEncoder.encode( numeratorFilePrefix, "UTF-8" ).replace("+", "%20" );
 			URL[] vResultURL = new URL[ ReturnTypes.values().length ];
 			if (service == null) {
 				service = getService();

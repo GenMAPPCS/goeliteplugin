@@ -48,10 +48,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.swing.JFrame;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JTextArea;
+import javax.swing.UIManager;
+import javax.swing.UnsupportedLookAndFeelException;
 
 import cytoscape.Cytoscape;
 import cytoscape.CytoscapeInit;
@@ -145,6 +148,8 @@ public class GOElitePlugin extends CytoscapePlugin {
 			debugWindow.append("tokens[2]: " + tokens[2]);
 			criteriaNames.add(tokens[2]);
 		}
+		debugWindow.append("returning ");
+
 		return ((String[]) criteriaNames.toArray(new String[criteriaNames
 				.size()]));
 	}
@@ -311,8 +316,9 @@ public class GOElitePlugin extends CytoscapePlugin {
 
 		new CommandHandler();
 	}
-}
+};
 
+	
 // Handles the top-level menu selection event from Cytoscape
 class GOElitePluginCommandListener implements ActionListener {
 	GOElitePlugin plugin = null;
@@ -321,12 +327,16 @@ class GOElitePluginCommandListener implements ActionListener {
 		plugin = plugin_;
 	}
 
+
 	public void actionPerformed(ActionEvent evt_) {
 		try {
 			// pop up dialog
-			InputDialog dialog = new InputDialog();
-			dialog.setSize(new Dimension(350, 500));
-			dialog.setVisible(true);
+			InputDialog d = new InputDialog();
+			
+			d.pack();
+			d.setVisible( true );
+
+
 		} catch (Exception e) {
 			Utilities.showError("Could not open main GOElite dialog", e);
 			System.out.println("Exception: " + e);
