@@ -16,6 +16,7 @@ import cytoscape.command.CyCommandManager;
 import cytoscape.command.CyCommandResult;
 import cytoscape.layout.LayoutProperties;
 import cytoscape.layout.Tunable;
+import edu.sdsc.nbcr.opal.AppServicePortType;
 import edu.sdsc.nbcr.opal.types.StatusOutputType;
 
 
@@ -35,7 +36,8 @@ public class CommandHandler extends AbstractCommandHandler {
 	protected static final String ARG_STATUS_MSG = "status_msg";
 	protected static final String ARG_RESULTS_FILE = "results_file";
 	protected static final String ARG_LOG_FILE = "log_file";
-
+    protected static final String ARG_NUMERATOR_FILE_PREFIX = "numerator_file_prefix";
+    
 	//EXTERNAL
 	protected final static String GET_ALL_DATASET_NODES = "get all dataset nodes";
 	
@@ -58,6 +60,7 @@ public class CommandHandler extends AbstractCommandHandler {
 		// get data id="id"
 		addDescription(GETDATA, "");
 		addArgument(GETDATA, ARG_ID);
+		addArgument(GETDATA, ARG_NUMERATOR_FILE_PREFIX );
 
 		// LAUNCH
 		// to get the arguments, we just use the properties passed in from the
@@ -125,19 +128,21 @@ public class CommandHandler extends AbstractCommandHandler {
 		} else if (GETDATA.equals(command)) {
 			// returns the result file URLs off the server
 			String jobId = getArg(command, ARG_ID, args);
-			Vector<URL> vURL = WebService.getResults(jobId, null, null);
-			if ( vURL.size() != 2 )
+			String numeratorFilePrefix = getArg( command, ARG_NUMERATOR_FILE_PREFIX, args );
+			
+			URL[] vURL = WebService.getResults(jobId, numeratorFilePrefix, null, null);
+			if ( vURL.length != 2 )
 			{
-				result.addMessage( "insufficient return values from server: " + vURL.size() );
+				result.addMessage( "insufficient return values from server: " + vURL.length );
 			}
 			else
 			{
 				result.addMessage("URL found");
-				result.addMessage("ARG_RESULTS_FILE = " + vURL.get(0) );
-				result.addResult(ARG_RESULTS_FILE, vURL.get(0) );
+				result.addMessage("ARG_RESULTS_FILE = " + vURL[ WebService.ReturnTypes.RESULT_PRUNED_GO_AND_PATHWAY.ordinal() ] );
+				result.addResult(ARG_RESULTS_FILE, vURL[ WebService.ReturnTypes.RESULT_PRUNED_GO_AND_PATHWAY.ordinal() ] );
 				
-				result.addMessage("ARG_LOG_FILE = " + vURL.get(1) );
-				result.addResult(ARG_LOG_FILE, vURL.get(1) );
+				result.addMessage("ARG_LOG_FILE = " + vURL[ WebService.ReturnTypes.RESULT_LOG.ordinal() ] );
+				result.addResult(ARG_LOG_FILE, vURL[ WebService.ReturnTypes.RESULT_LOG.ordinal() ] );
 			}
 		}
 		return (result);

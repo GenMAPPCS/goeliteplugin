@@ -1656,8 +1656,12 @@ public class InputDialog extends JDialog implements ActionListener {
 							 
 									.getSelectionModel();
 							
+
+							// truly this belongs to the resultsTable, but we are lazy and not overriding JTable so we simply store pass it along
+							//    to each worker class that needs it.
+							HashMap< Integer, CyNetwork > networkMap = new HashMap< Integer, CyNetwork >();
 							
-							PathwayListSelectionListener lsl = new PathwayListSelectionListener( resultsTable );
+							PathwayListSelectionListener lsl = new PathwayListSelectionListener( resultsTable, networkMap );
 							
 							tableRowSelectionModel
 									.addListSelectionListener(lsl);
@@ -1671,12 +1675,12 @@ public class InputDialog extends JDialog implements ActionListener {
 							
 							debugWindow.append( "1\n");
 							
-							ClickableRenderer cr = new ClickableRenderer();
+							ClickableRenderer cr = new ClickableRenderer( networkMap );
 							cr.setToolTipText("Click to load pathway");
 							debugWindow.append( "2\n");
-				/*			resultsTable.getColumnModel().getColumn(0)    XXX seems to cause hanging / poor swing performance, who knows why?
+							resultsTable.getColumnModel().getColumn(0)    //XXX seems to cause hanging / poor swing performance, who knows why?
 									.setCellRenderer(cr);
-				*/			
+							
 							debugWindow.append( "3\n");
 							resultsTable
 									.addMouseMotionListener(new MouseMotionAdapter() {

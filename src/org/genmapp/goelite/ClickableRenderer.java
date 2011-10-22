@@ -20,28 +20,34 @@ import cytoscape.CyNetwork;
  */
 class ClickableRenderer extends DefaultTableCellRenderer {
 
-	private Map<Integer, CyNetwork> networkMap = new HashMap<Integer, CyNetwork>();
-	private Integer row = null;
+	boolean bGpmlPluginLoaded = false;
+	HashMap< Integer, CyNetwork > networkMap = null;
+	
+	public ClickableRenderer( HashMap< Integer, CyNetwork > networkMap_ )
+	{
+		bGpmlPluginLoaded = ( null != GpmlPlugin.getInstance() );
+		networkMap = networkMap_;
+	}
 	
 	public Component getTableCellRendererComponent(JTable table, Object value,
 			boolean isSelected, boolean hasFocus, int row, int column) {
-		
-		this.row = row;
+	
 		
 		Component c = super.getTableCellRendererComponent(table, value,
 				isSelected, false, row, column);
+	
 		// Font f = new Font("", Font.BOLD, 12);
 		Map<TextAttribute, Integer> map = new HashMap<TextAttribute, Integer>();
 		map.put(TextAttribute.UNDERLINE, TextAttribute.UNDERLINE_ON);
 		
 		Color linkColor = Color.blue;
-		if(InputDialog.networkMap.containsKey(this.row)){
+		if( networkMap.containsKey( row )){
 			linkColor = new Color(85,  26, 139);
 		}
 
 		// if GPML plugin is loaded, then create pathway links
-		GpmlPlugin gp = GpmlPlugin.getInstance();
-		if (null != gp) {
+		if ( bGpmlPluginLoaded ) 
+		{
 			c.setFont(c.getFont().deriveFont(map));
 			c.setForeground(linkColor);
 			c.setBackground(Color.white);
