@@ -25,14 +25,15 @@ public class PathwayListSelectionListener implements ListSelectionListener
 	 * responding to clicks on pathway results.
 	 */
 	
-		// the lsl has its own network map to track what pathway networks have been loaded by the user already---this prevents double-loading, but also
+		// the network map is to track what pathway networks have been loaded by the user already---we have separate ones for each resulttable. This 
+		//    prevents double-loading, but also
 		//    allows multiple results panels to have this functionality.  The networkMap tracks rowIndex of the resultsTable its associated with --> 
 		//    already-loaded pathways network object
 		Map<Integer, CyNetwork> networkMap = null;
 		JTable resultsTable = null;
-		public PathwayListSelectionListener( JTable resultsTable_ )
+		public PathwayListSelectionListener( JTable resultsTable_, Map<Integer, CyNetwork > networkMap_ )
 		{
-			networkMap = new HashMap<Integer, CyNetwork>();
+			networkMap = networkMap_;
 			resultsTable = resultsTable_;
 
 		}
