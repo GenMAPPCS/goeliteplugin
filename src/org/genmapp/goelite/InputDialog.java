@@ -107,7 +107,7 @@ public class InputDialog extends JDialog implements ActionListener {
 
 	enum InputDataType { FILE, CRITERIA, NETWORK };
 	
-	InputDataType mode = InputDataType.FILE;
+	InputDataType mode = InputDataType.CRITERIA;
 	JTextField fileNumerFilename, fileDenomFilename;
 	JLabel fileNumerFileDescriptor, fileDenomFileDescriptor;
 	JLabel criteriaNumerFileDescriptor, criteriaDenomFileDescriptor;
@@ -151,6 +151,8 @@ public class InputDialog extends JDialog implements ActionListener {
 			return;
 		}
 
+		String defaultLatinNameSpecies = CytoscapeInit.getProperties().getProperty("defaultSpeciesName");
+				   
     	int idx = 0;
 		int defaultSpeciesIdx = 0;
 		ArrayList<String> arrayListSpecies = new ArrayList<String>();
@@ -159,13 +161,16 @@ public class InputDialog extends JDialog implements ActionListener {
 		
 			// format: genus \t species \t common \t two-letter
 			String latinName = (s[0] + " " + s[1]);
+			if ( defaultLatinNameSpecies.equals( latinName ) )
+			{
+				defaultSpeciesIdx = idx;
+			}
 			String twoLetterCode = s[3];
 		
 			if (latinName.equals(defaultSpecies)) {
 				defaultSpeciesIdx = idx;
 			}
 		
-			// you can also use this list to populate your vSpecies[] array
 			arrayListSpecies.add(twoLetterCode);
 			idx++;
 		}
@@ -194,9 +199,9 @@ public class InputDialog extends JDialog implements ActionListener {
         modeSelectionPanel.setBorder( new TitledBorder( BorderFactory.createEtchedBorder( EtchedBorder.LOWERED ), "", 
         		TitledBorder.LEFT, TitledBorder.DEFAULT_POSITION ) );
        
-        addRadioButton( InputDataType.FILE, modeSelectionPanel );
         addRadioButton( InputDataType.CRITERIA, modeSelectionPanel );
         addRadioButton( InputDataType.NETWORK, modeSelectionPanel );
+        addRadioButton( InputDataType.FILE, modeSelectionPanel );
         
     	CyLogger.getLogger().debug( "addComponentToPane 2" );
         
@@ -208,6 +213,8 @@ public class InputDialog extends JDialog implements ActionListener {
 
         // init data-holding components
         fileSpeciesToAnalyzeComboBox = new JComboBox( vSpecies );
+        fileSpeciesToAnalyzeComboBox.setSelectedIndex( defaultSpeciesIdx );
+		
         fileMODIDSystemComboBox = new JComboBox( vMODIDSystems );        
         
         Box fileSpeciesParamBox = Box.createHorizontalBox();
@@ -263,6 +270,7 @@ public class InputDialog extends JDialog implements ActionListener {
 
         // init data-holding components
         criteriaSpeciesToAnalyzeComboBox = new JComboBox( vSpecies );
+        criteriaSpeciesToAnalyzeComboBox.setSelectedIndex( defaultSpeciesIdx );
         criteriaPrimaryIDSystemComboBox = new JComboBox( vGeneSystems );
         criteriaInputCriteriaSetComboBox = new JComboBox();
 		criteriaPrimaryIDColumnComboBox = new JComboBox();
@@ -323,10 +331,10 @@ public class InputDialog extends JDialog implements ActionListener {
         criteriaParamsBox.setBorder( new TitledBorder( BorderFactory.createEtchedBorder( EtchedBorder.LOWERED ), "Params",
         		TitledBorder.LEFT, TitledBorder.DEFAULT_POSITION) );
         
-        Box criteriaSpeciesParamBox = Box.createHorizontalBox();
+/*        Box criteriaSpeciesParamBox = Box.createHorizontalBox();
         criteriaSpeciesParamBox.add( new JLabel( "Species" ) );
         criteriaSpeciesParamBox.add( criteriaSpeciesToAnalyzeComboBox );
-        
+  */      
         Box criteriaPrimaryIDParamBox = Box.createHorizontalBox();
         criteriaPrimaryIDParamBox.add( new JLabel( "Primary ID Column" ) );
         criteriaPrimaryIDParamBox.add( Box.createHorizontalGlue() );        
@@ -362,7 +370,6 @@ public class InputDialog extends JDialog implements ActionListener {
         criteriaDenomPanel.add( Box.createHorizontalGlue() );        
         criteriaDenomPanel.add( criteriaInputCriteriaComboBox );
                 
-        criteriaInputSelectPanel.add( criteriaSpeciesParamBox ); 
         criteriaInputSelectPanel.add( criteriaPrimaryIDParamBox );
         criteriaInputSelectPanel.add( criteriaNumerPanel );
         criteriaInputSelectPanel.add( criteriaDenomPanel );        
@@ -378,7 +385,9 @@ public class InputDialog extends JDialog implements ActionListener {
         networkCard.setLayout( new BoxLayout( networkCard, BoxLayout.Y_AXIS ) );
 
         networkSpeciesToAnalyzeComboBox = new JComboBox( vSpecies );
-		networkPrimaryIDColumnComboBox = new JComboBox();
+        networkSpeciesToAnalyzeComboBox.setSelectedIndex( defaultSpeciesIdx );
+		
+        networkPrimaryIDColumnComboBox = new JComboBox();
 		networkPrimaryIDColumnComboBox.insertItemAt("ID", 0);
 		for (String n : attributeNames) {
 			if (CyAttributes.TYPE_STRING == nodeAttributes
@@ -1527,10 +1536,28 @@ public class InputDialog extends JDialog implements ActionListener {
 						/*
 						 * 	Process GO Results Table
 						 */
+						
 						if (GONameResultsRowData.size() > 0) 
 						{
+							
 							debugWindow.append("processing GOName Results\n");
 	
+							// filter rows for z-score
+							// z-score has index 13
+							
+							int rowsDeleted = 0;
+							for ( int i = 0; i < GONameResultsRowData.size(); i++ )
+							{
+								String x = ( String ) GONameResultsRowData.get( i ).get( 13 );
+								if ( new Double( x ).doubleValue() < 0 )
+								{
+									// delete row
+									GONameResultsRowData.remove( i );
+									
+									// adjust for deletion
+									i--;
+								}
+							}
 							resultsTable = new JTable(
 									GONameResultsRowData,
 									GONameResultsColumnNames) {
@@ -1571,84 +1598,32 @@ public class InputDialog extends JDialog implements ActionListener {
 					{
 						debugWindow.append( "3\n");
 	
-						/*
-						 * Listener for row selection in Pathway results table. Useful for
-						 * responding to clicks on pathway results.
-						 */
-						ListSelectionListener lsl = new ListSelectionListener() {
-							public void valueChanged(ListSelectionEvent e) {
-								CyLogger.getLogger().debug( "valueChanged:" );
-								ListSelectionModel lsm = (ListSelectionModel) e.getSource();
-
-								int rowIndex = lsm.getLeadSelectionIndex();
-								boolean isAdjusting = e.getValueIsAdjusting();
-
-								boolean loaded = false;
-								CyNetwork n = networkMap.get(rowIndex);
-								if (n != null) {
-									CyLogger.getLogger().debug( "n != null" );
-
-									// verify that network still exists and has not been destroyed
-									if (Cytoscape.getNetworkSet().contains(n)) {
-										// check to see if network has view; if not then destroy and reload!
-										if (!Cytoscape.getNetworkViewMap().containsValue(Cytoscape.getNetworkView(n.getIdentifier()))){
-											Cytoscape.destroyNetwork(n);
-											networkMap.remove(n);
-										} else {
-											loaded = true;
-											Cytoscape.getDesktop().setFocus(n.getIdentifier());
-											// then clear selection to allow refocus
-											resultsTable.clearSelection();
-										}
-									} else {
-										networkMap.remove(n);
-									}
-								}
-
-								if (isAdjusting && !loaded) {
-									CyLogger.getLogger().debug( "isAdjusting && !loaded" );
-
-									CyLogger.getLogger().debug( "isAdjusting && !loaded: rowIndex = " + rowIndex );
-
-									String value = (String) resultsTable.getValueAt(
-											rowIndex, 0);
-									CyLogger.getLogger().debug( "value: " + value );
-									Pattern pat = Pattern.compile(":WP");
-									String[] terms = pat.split(value);
-									String wp = "WP" + terms[1];
-									// System.out.println(wp);
-									CyLogger.getLogger().debug( "wp: " + wp );
-									
-									
-									// Get the instance of the GPML plugin
-									GpmlPlugin gp = GpmlPlugin.getInstance();
-									CyLogger.getLogger().debug( "gpml plugin: " + gp );
-
-									// if GPML plugin is loaded, then attempt load pathway
-									if (null != gp) {
-										Task task = new LoadPathwayTask(gp, wp, rowIndex, resultsTable);
-										JTaskConfig config = new JTaskConfig();
-										config.setModal(false);
-										config.setOwner(Cytoscape.getDesktop());
-										config.setAutoDispose(true);
-
-										CyLogger.getLogger().debug( "executing task: " + task );
-
-										TaskManager.executeTask(task, config);
-
-									}
-
-								}
-
-							}
-						};
-
+				
 						/*
 						 * Process Pathway Results Table
 						 */
 						if (pathwayResultsRowData.size() > 0) {
 							debugWindow.append("PathwayResults...\n");
 							debugWindow.append("processing pathwayResults\n");
+							
+	
+							// filter rows for z-score
+							// z-score has index 6							
+							int rowsDeleted = 0;
+							for ( int i = 0; i < pathwayResultsRowData.size(); i++ )
+							{
+								String x = ( String ) pathwayResultsRowData.get( i ).get( 6 );
+								if ( new Double( x ).doubleValue() < 0 )
+								{
+									// delete row
+									pathwayResultsRowData.remove( i );
+									
+									// adjust for deletion
+									i--;
+								}
+							}
+						
+							
 							resultsTable = new JTable(
 									pathwayResultsRowData,
 									pathwayResultsColumnNames) 
@@ -1676,8 +1651,14 @@ public class InputDialog extends JDialog implements ActionListener {
 							debugWindow.append( "hiding columns for pathway results");
 							// support row selection
 							//pathwayResultsTable.setCellSelectionEnabled(true);
-							ListSelectionModel tableRowSelectionModel = resultsTable
+							
+							 ListSelectionModel tableRowSelectionModel = resultsTable
+							 
 									.getSelectionModel();
+							
+							
+							PathwayListSelectionListener lsl = new PathwayListSelectionListener( resultsTable );
+							
 							tableRowSelectionModel
 									.addListSelectionListener(lsl);
 							tableRowSelectionModel
@@ -1689,11 +1670,13 @@ public class InputDialog extends JDialog implements ActionListener {
 							// render cells to appear like hyperlinks
 							
 							debugWindow.append( "1\n");
+							
 							ClickableRenderer cr = new ClickableRenderer();
 							cr.setToolTipText("Click to load pathway");
 							debugWindow.append( "2\n");
-							resultsTable.getColumnModel().getColumn(0)
+				/*			resultsTable.getColumnModel().getColumn(0)    XXX seems to cause hanging / poor swing performance, who knows why?
 									.setCellRenderer(cr);
+				*/			
 							debugWindow.append( "3\n");
 							resultsTable
 									.addMouseMotionListener(new MouseMotionAdapter() {
@@ -1710,7 +1693,8 @@ public class InputDialog extends JDialog implements ActionListener {
 										}
 									});
 	
-							debugWindow.append( "4\n");	
+							debugWindow.append( "4\n");
+								
 						}
 					}
 					
@@ -1979,7 +1963,6 @@ public class InputDialog extends JDialog implements ActionListener {
 	Affy
 	WikiGenes
 	*/
-	
 	static String vGeneSystems[] = {new String("Ensembl Yeast"),
 			new String("Entrez Gene"), new String("SGD"),
 			new String("Tuberculist"), new String("Affy"), new String( "???" ) };
@@ -1994,7 +1977,7 @@ public class InputDialog extends JDialog implements ActionListener {
 	static String vGeneSystemCodes[] = {new String("En"), new String("L"),
 			new String("D"), new String("Tb"), new String("X")};
 	static String vPruningAlgorithms[] = {new String("z-score"),
-			new String("\"gene number\""), new String("combination")};
+			new String("\"gene_number\""), new String("combination")};
 	
 	public static String[] getSpeciesCodes() {
 		return (vSpecies);
@@ -2015,8 +1998,6 @@ public class InputDialog extends JDialog implements ActionListener {
 
 	// used for results panel in Cytoscape window
 	static boolean bResultsMasterPanelAlreadyAdded = false;
-
-	static Map<Integer, CyNetwork> networkMap = new HashMap<Integer, CyNetwork>();
 
 
 
@@ -2224,6 +2205,16 @@ public class InputDialog extends JDialog implements ActionListener {
 			 {
 				 cell.setBackground( Color.white );
 			 }
+			 
+			 if ( isSelected )
+			 {
+				 cell.setForeground( Color.red );
+			 }
+			 else
+			 {
+				 cell.setForeground( Color.black );
+			 }
+			 
 			 return cell;
 		 }
 	 }

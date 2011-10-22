@@ -26,12 +26,14 @@ public class LoadPathwayTask implements Task {
 	private CyNetwork n = null;
 	private Map<Integer, CyNetwork> networkMap = new HashMap<Integer, CyNetwork>();
 
-	public LoadPathwayTask(GpmlPlugin gp, String wp, Integer ri, JTable prt) {
+	
+	public LoadPathwayTask(GpmlPlugin gp, String wp, Integer ri, JTable prt, Map<Integer, CyNetwork> networkMap_ ) {
 		super();
 		this.gp = gp;
 		this.wp = wp;
 		this.rowIndex = ri;
 		this.prt = prt;
+		this.networkMap = networkMap_;
 	}
 
 	public String getTitle() {
@@ -54,9 +56,7 @@ public class LoadPathwayTask implements Task {
 			n = gp.load(p, true);
 
 			// Track loaded networks to avoid reloading
-			networkMap = InputDialog.networkMap;
 			networkMap.put(rowIndex, n);
-			InputDialog.networkMap = networkMap;
 			
 			//fire NETWORK_LOADED event
 			// Object[2] is a Cytoscape convention
