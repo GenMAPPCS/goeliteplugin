@@ -1007,6 +1007,17 @@ public class InputDialog extends JDialog implements ActionListener {
 		AppServicePortType service = null;
 		String jobID = null;
 		JTable resultsTable = null; 
+		Vector<String> logFileContents = new Vector<String>();
+		Vector<String> stdoutFileContents = new Vector<String>();
+		Vector<String> stderrFileContents = new Vector<String>();
+		Vector<String> GONameResultsColumnNames = new Vector<String>();
+		Vector<String> pathwayResultsColumnNames = new Vector<String>();
+		Vector<Vector> GONameResultsRowData = new Vector<Vector>();
+		Vector<Vector> pathwayResultsRowData = new Vector<Vector>();
+		HashMap< String, Boolean > GOIDsToHighlight = new HashMap< String, Boolean >();
+		HashMap< String, Boolean > pathwayIDsToHighlight = new HashMap< String, Boolean >();
+		Vector< Boolean > vbGORowsToHighlight = new Vector< Boolean >(); // parallel array with GONameResultsRowData[]
+		Vector< Boolean > vbPathwayRowsToHighlight = new Vector< Boolean >();
 		
 		// go-elite user parameters:  these override the ones selected in the dialog 
 		int overrideNumPermutations = -1;   // -1 will default to using the dialog selection
@@ -1019,7 +1030,7 @@ public class InputDialog extends JDialog implements ActionListener {
 		double defaultZScoreThresh = 1.96;
 		
 		boolean bRunGONotPathwayAnalysis = false;
-		
+		URL[] vResultURL = null;
 		
 		public InputDialogWorker( String geneListFilePath_, String denomFilePath_, boolean bRunGONotPathwayAnalysis_, CloseableTabbedPane resultsAnalysisTypePanel_, 
 				int numPermutations_, String zScorePruningMethod_ )
@@ -1171,11 +1182,263 @@ public class InputDialog extends JDialog implements ActionListener {
 								.getDocument().getLength());
 
 				}
+
+			
+				debugWindow.append("getting results!!!\n");
+
+				String geneListFilePrefix = "";
+				Pattern p = Pattern.compile( "(.+(\\\\|/))*(.+)\\.txt" );
+				Matcher m = p.matcher( geneListFilePath );
+				if ( m.matches() )
+				{
+				  geneListFilePrefix = m.group( 3 );
+				  debugWindow.append( "prefix = " + geneListFilePrefix + "\n" );
+				}
+				else
+				{
+					// throw error
+					CyLogger.getLogger().error( "gene list file must end in .txt" );
+					return( null );
+				}
+				
+				URL[] vResultURL = WebService.getResults(jobID, geneListFilePrefix,
+						service, debugWindow );
+				debugWindow.append("results fetched: "
+						+ vResultURL.length + " URLs\n");
+
+				// ******  grab results off server and put into simple data structures *****
+				// process each output file that's sitting on server
+				InputStream is = null;
+				DataInputStream dis;
+				String s;
+				
+			    URL u = vResultURL[ WebService.ReturnTypes.RESULT_PRUNED_GO_AND_PATHWAY.ordinal() ];
+				debugWindow.append(u + "\n");
+				if ( null != u ) 
+				{
+					debugWindow.append("parsing pruned results\n");
+					statusWindow
+							.append("\nParsing pruned results table...\n");
+					Vector<String> fileContents = Utilities
+							.getFileContents(u);
+					Enumeration<String> contents = fileContents
+							.elements();
+
+					boolean processingGONameResultsNotPathwayResults = bRunGONotPathwayAnalysis;
+
+					boolean bIsFirstLine = true;
+
+					// the same filename)) could potentially hold both go or pathway results, but for us, we are only running one mode
+					//    per job so we know which result type to expect from this file
+					// header = 1st line:  rest = data  
+					//   may be some blank lines at end?
+					while (contents.hasMoreElements()) {
+
+						String line = (String) contents
+								.nextElement();
+						if ( bIsFirstLine ) { bIsFirstLine = false; continue; }
+					
+						Vector<String> columnsAsVector = new Vector<String>();
+						String[] rowData = (line).split("\t");
+						if ( rowData.length < 3 ) { continue; }
+						
+						// it's a data line
+						if (processingGONameResultsNotPathwayResults) 
+						{
+							String GONameAndID = rowData[ 2 ];
+							CyLogger.getLogger().debug( "try and highlight: " + GONameAndID );
+
+							Pattern pat = Pattern.compile( ".+\\((.+)\\)");
+							Matcher match = pat.matcher( GONameAndID );
+							if ( match.matches() )
+							{
+							  String GOID = match.group( 1 );
+							  CyLogger.getLogger().debug( "highlight: " + GOID );
+							  
+							  GOIDsToHighlight.put( GOID, Boolean.TRUE );
+							}
+							else
+							{
+								CyLogger.getLogger().error( "Couldn't parse: " + GONameAndID + " for line " + line );
+							}
+						} 
+						else 
+						{
+							// pathway info is given as
+							// 3rd column = MAPP name
+							// ( text name ):( pathway id )
+							String[] pathwayNameAndID = rowData[ 2 ].split( ":" );
+							String pathwayID = pathwayNameAndID[ 1 ];
+							pathwayIDsToHighlight.put( pathwayID, Boolean.TRUE );
+							CyLogger.getLogger().debug( "highlight pathway: " + pathwayID );
+						}
+					}
+				} 
+
+				u = vResultURL[ WebService.ReturnTypes.RESULT_FULL_GO.ordinal() ];
+				debugWindow.append(u + "\n");
+				if ( null != u ) 
+				{
+					
+					debugWindow.append("parsing full go results\n");
+					Vector<String> fileContents = Utilities
+							.getFileContents(u);
+					Enumeration<String> contents = fileContents
+							.elements();
+
+					// the results file is arranged so that GO results are reported above the Pathway results
+					// When we see a header row that has "GOID" as its 1st column, we know that we've switched to Pathway results
+					boolean bStartProcessing = false;
+					long GORowsToHighlight = 0;
+					while (contents.hasMoreElements()) 
+					{
+
+						String line = (String) contents
+								.nextElement();
+						// System.out.println(line);
+						Vector<String> columnsAsVector = new Vector<String>();
+						String[] rowData = (line).split("\t");
+
+						if ( !bStartProcessing && rowData[ 0 ].contains("GOID") ) 
+						{
+							bStartProcessing = true;
+							GONameResultsColumnNames.addAll(Arrays
+									.asList(rowData));
+							continue;
+						}
+						if ( !bStartProcessing ) { continue; }
+						
+						if ( GOIDsToHighlight.containsKey( rowData[ 0 ] ) && 
+						     ( Boolean.TRUE == GOIDsToHighlight.get( rowData[ 0 ] ) ) )
+						{
+							GORowsToHighlight++;
+							vbGORowsToHighlight.add( Boolean.TRUE );
+						}
+						else
+						{
+							vbGORowsToHighlight.add( Boolean.FALSE );
+						}
+						
+						GONameResultsRowData
+									.add(new Vector<String>(Arrays
+											.asList(rowData)));
+						
+					}
+					CyLogger.getLogger().debug( "GORowsToHighlight " + GORowsToHighlight );
+				}
+				
+				u = vResultURL[ WebService.ReturnTypes.RESULT_FULL_PATHWAY.ordinal() ];
+				debugWindow.append(u + "\n");
+				if ( null != u ) 
+				{
+					
+					debugWindow.append("parsing full pathway results\n");
+					Vector<String> fileContents = Utilities
+							.getFileContents(u);
+					Enumeration<String> contents = fileContents
+							.elements();
+
+					// the results file is arranged so that there is a lengthy header
+					// the header ends / column names start with "^MAPP Name"
+					boolean bStartProcessing = false;
+					long pathwayRowsToHighlight = 0;
+					while (contents.hasMoreElements()) 
+					{
+
+						
+						String line = (String) contents
+								.nextElement();
+						// System.out.println(line);
+						Vector<String> columnsAsVector = new Vector<String>();
+						String[] rowData = (line).split("\t");
+
+						if ( !bStartProcessing && rowData[ 0 ].contains("MAPP Name") ) 
+						{
+							bStartProcessing = true;
+							pathwayResultsColumnNames.addAll(Arrays
+									.asList(rowData));
+							continue;
+						}
+						if ( !bStartProcessing ) { continue; }
+						
+						// Pathway ID is buried in the MAPPName   ( text name ):( id )
+						// Triacylglyceride Synthesis:WP386
+
+						CyLogger.getLogger().debug( "rowdata[0] " + rowData[0] );
+
+						String[] pathwayTextNameAndID = rowData[ 0 ].split( ":" );
+						String pathwayID = pathwayTextNameAndID[1];
+						CyLogger.getLogger().debug( "pathwayTextNameAndID " + pathwayID);
+
+						if ( pathwayIDsToHighlight.containsKey( pathwayID ) && 
+						     ( Boolean.TRUE == pathwayIDsToHighlight.get( pathwayID ) ) )
+						{
+							pathwayRowsToHighlight++;
+							vbPathwayRowsToHighlight.add( Boolean.TRUE );
+						}
+						else
+						{
+							vbPathwayRowsToHighlight.add( Boolean.FALSE );
+						}
+						
+						pathwayResultsRowData
+									.add(new Vector<String>(Arrays
+											.asList(rowData)));
+						
+					}
+					CyLogger.getLogger().debug( "pathwayRowsToHighlight " + pathwayRowsToHighlight );
+				}
+				
+				u = vResultURL[ WebService.ReturnTypes.RESULT_LOG.ordinal() ];
+				if ( null != u )
+				{
+					logFileContents = Utilities.getFileContents(u);
+				} 
+				
+				u = vResultURL[ WebService.ReturnTypes.RESULT_STDOUT.ordinal() ];
+				if ( null != u ) 
+				{
+					stdoutFileContents = Utilities.getFileContents( u );
+				} 
+				
+				u = vResultURL[ WebService.ReturnTypes.RESULT_STDERR.ordinal() ];
+				if ( null != u ) 
+				{
+					stderrFileContents = Utilities.getFileContents( u );
+				}
+
+				
+					
+				
+				// *****  process results *****							
+				if ( GONameResultsRowData.size() == 0 && bRunGONotPathwayAnalysis )
+				{
+					statusWindow.append( "No GO results found\n" );
+				}
+				if ( pathwayResultsRowData.size() == 0 && !bRunGONotPathwayAnalysis )
+				{
+					statusWindow.append( "No Pathway results found\n" );
+				}
+				else
+				{
+				}			
+			
+			
 			} catch (javax.xml.rpc.ServiceException e) {
 				Utilities.showError("Could not retrieve webservice", e);
+			} catch (java.net.MalformedURLException e) {
+				debugWindow.append("error:" + e );
+				statusWindow.append("exception: " + e );
+
+				Utilities.showError(
+						"malformed URL while fetching results: ", e);
 			} catch (java.lang.InterruptedException e) {
 				// Thread.sleep() was interrupted, ignore
+			} catch( IOException e )
+			{
+				CyLogger.getLogger().error( "IOException: " + e );
 			}
+			
 
 			return (status);
 		}
@@ -1189,261 +1452,10 @@ public class InputDialog extends JDialog implements ActionListener {
 			debugWindow.append("done! status = " + status + "\n");
 			try {
 			
-			
-
 				// print results in results panel
 				// status.getCode() == 8  means success
 				// grab all the available results, regardless of return code
 				if ( true ) {
-					debugWindow.append("getting results!!!\n");
-
-					String geneListFilePrefix = "";
-					Pattern p = Pattern.compile( "(.+(\\\\|/))*(.+)\\.txt" );
-					Matcher m = p.matcher( geneListFilePath );
-					if ( m.matches() )
-					{
-					  geneListFilePrefix = m.group( 3 );
-					  debugWindow.append( "prefix = " + geneListFilePrefix + "\n" );
-					}
-					else
-					{
-						// throw error
-						CyLogger.getLogger().error( "gene list file must end in .txt" );
-						return;
-					}
-					
-					URL[] vResultURL = WebService.getResults(jobID, geneListFilePrefix,
-							service, debugWindow );
-					debugWindow.append("results fetched: "
-							+ vResultURL.length + " URLs\n");
-
-					// ******  grab results off server and put into simple data structures *****
-					Vector<String> logFileContents = new Vector<String>();
-					Vector<String> stdoutFileContents = new Vector<String>();
-					Vector<String> stderrFileContents = new Vector<String>();
-					Vector<String> GONameResultsColumnNames = new Vector<String>();
-					Vector<String> pathwayResultsColumnNames = new Vector<String>();
-					Vector<Vector> GONameResultsRowData = new Vector<Vector>();
-					Vector<Vector> pathwayResultsRowData = new Vector<Vector>();
-					HashMap< String, Boolean > GOIDsToHighlight = new HashMap< String, Boolean >();
-					HashMap< String, Boolean > pathwayIDsToHighlight = new HashMap< String, Boolean >();
-					Vector< Boolean > vbGORowsToHighlight = new Vector< Boolean >(); // parallel array with GONameResultsRowData[]
-					Vector< Boolean > vbPathwayRowsToHighlight = new Vector< Boolean >();
-					// process each output file that's sitting on server
-					InputStream is = null;
-					DataInputStream dis;
-					String s;
-					
-				    URL u = vResultURL[ WebService.ReturnTypes.RESULT_PRUNED_GO_AND_PATHWAY.ordinal() ];
-					debugWindow.append(u + "\n");
-					if ( null != u ) 
-					{
-						debugWindow.append("parsing pruned results\n");
-						statusWindow
-								.append("\nParsing pruned results table...\n");
-						Vector<String> fileContents = Utilities
-								.getFileContents(u);
-						Enumeration<String> contents = fileContents
-								.elements();
-
-						boolean processingGONameResultsNotPathwayResults = bRunGONotPathwayAnalysis;
-
-						boolean bIsFirstLine = true;
-
-						// the same filename)) could potentially hold both go or pathway results, but for us, we are only running one mode
-						//    per job so we know which result type to expect from this file
-						// header = 1st line:  rest = data  
-						//   may be some blank lines at end?
-						while (contents.hasMoreElements()) {
-
-							String line = (String) contents
-									.nextElement();
-							if ( bIsFirstLine ) { bIsFirstLine = false; continue; }
-						
-							Vector<String> columnsAsVector = new Vector<String>();
-							String[] rowData = (line).split("\t");
-							if ( rowData.length < 3 ) { continue; }
-							
-							// it's a data line
-							if (processingGONameResultsNotPathwayResults) 
-							{
-								String GONameAndID = rowData[ 2 ];
-								CyLogger.getLogger().debug( "try and highlight: " + GONameAndID );
-
-								Pattern pat = Pattern.compile( ".+\\((.+)\\)");
-								Matcher match = pat.matcher( GONameAndID );
-								if ( match.matches() )
-								{
-								  String GOID = match.group( 1 );
-								  CyLogger.getLogger().debug( "highlight: " + GOID );
-								  
-								  GOIDsToHighlight.put( GOID, Boolean.TRUE );
-								}
-								else
-								{
-									CyLogger.getLogger().error( "Couldn't parse: " + GONameAndID + " for line " + line );
-								}
-							} 
-							else 
-							{
-								// pathway info is given as
-								// 3rd column = MAPP name
-								// ( text name ):( pathway id )
-								String[] pathwayNameAndID = rowData[ 2 ].split( ":" );
-								String pathwayID = pathwayNameAndID[ 1 ];
-								pathwayIDsToHighlight.put( pathwayID, Boolean.TRUE );
-								CyLogger.getLogger().debug( "highlight pathway: " + pathwayID );
-							}
-						}
-					} 
-
-					u = vResultURL[ WebService.ReturnTypes.RESULT_FULL_GO.ordinal() ];
-					debugWindow.append(u + "\n");
-					if ( null != u ) 
-					{
-						
-						debugWindow.append("parsing full go results\n");
-						Vector<String> fileContents = Utilities
-								.getFileContents(u);
-						Enumeration<String> contents = fileContents
-								.elements();
-
-						// the results file is arranged so that GO results are reported above the Pathway results
-						// When we see a header row that has "GOID" as its 1st column, we know that we've switched to Pathway results
-						boolean bStartProcessing = false;
-						long GORowsToHighlight = 0;
-						while (contents.hasMoreElements()) 
-						{
-
-							String line = (String) contents
-									.nextElement();
-							// System.out.println(line);
-							Vector<String> columnsAsVector = new Vector<String>();
-							String[] rowData = (line).split("\t");
-
-							if ( !bStartProcessing && rowData[ 0 ].contains("GOID") ) 
-							{
-								bStartProcessing = true;
-								GONameResultsColumnNames.addAll(Arrays
-										.asList(rowData));
-								continue;
-							}
-							if ( !bStartProcessing ) { continue; }
-							
-							if ( GOIDsToHighlight.containsKey( rowData[ 0 ] ) && 
-							     ( Boolean.TRUE == GOIDsToHighlight.get( rowData[ 0 ] ) ) )
-							{
-								GORowsToHighlight++;
-								vbGORowsToHighlight.add( Boolean.TRUE );
-							}
-							else
-							{
-								vbGORowsToHighlight.add( Boolean.FALSE );
-							}
-							
-							GONameResultsRowData
-										.add(new Vector<String>(Arrays
-												.asList(rowData)));
-							
-						}
-						CyLogger.getLogger().debug( "GORowsToHighlight " + GORowsToHighlight );
-					}
-					
-					u = vResultURL[ WebService.ReturnTypes.RESULT_FULL_PATHWAY.ordinal() ];
-					debugWindow.append(u + "\n");
-					if ( null != u ) 
-					{
-						
-						debugWindow.append("parsing full pathway results\n");
-						Vector<String> fileContents = Utilities
-								.getFileContents(u);
-						Enumeration<String> contents = fileContents
-								.elements();
-
-						// the results file is arranged so that there is a lengthy header
-						// the header ends / column names start with "^MAPP Name"
-						boolean bStartProcessing = false;
-						long pathwayRowsToHighlight = 0;
-						while (contents.hasMoreElements()) 
-						{
-
-							
-							String line = (String) contents
-									.nextElement();
-							// System.out.println(line);
-							Vector<String> columnsAsVector = new Vector<String>();
-							String[] rowData = (line).split("\t");
-
-							if ( !bStartProcessing && rowData[ 0 ].contains("MAPP Name") ) 
-							{
-								bStartProcessing = true;
-								pathwayResultsColumnNames.addAll(Arrays
-										.asList(rowData));
-								continue;
-							}
-							if ( !bStartProcessing ) { continue; }
-							
-							// Pathway ID is buried in the MAPPName   ( text name ):( id )
-							// Triacylglyceride Synthesis:WP386
-
-							CyLogger.getLogger().debug( "rowdata[0] " + rowData[0] );
-
-							String[] pathwayTextNameAndID = rowData[ 0 ].split( ":" );
-							String pathwayID = pathwayTextNameAndID[1];
-							CyLogger.getLogger().debug( "pathwayTextNameAndID " + pathwayID);
-
-							if ( pathwayIDsToHighlight.containsKey( pathwayID ) && 
-							     ( Boolean.TRUE == pathwayIDsToHighlight.get( pathwayID ) ) )
-							{
-								pathwayRowsToHighlight++;
-								vbPathwayRowsToHighlight.add( Boolean.TRUE );
-							}
-							else
-							{
-								vbPathwayRowsToHighlight.add( Boolean.FALSE );
-							}
-							
-							pathwayResultsRowData
-										.add(new Vector<String>(Arrays
-												.asList(rowData)));
-							
-						}
-						CyLogger.getLogger().debug( "pathwayRowsToHighlight " + pathwayRowsToHighlight );
-					}
-					
-					u = vResultURL[ WebService.ReturnTypes.RESULT_LOG.ordinal() ];
-					if ( null != u )
-					{
-						logFileContents = Utilities.getFileContents(u);
-					} 
-					
-					u = vResultURL[ WebService.ReturnTypes.RESULT_STDOUT.ordinal() ];
-					if ( null != u ) 
-					{
-						stdoutFileContents = Utilities.getFileContents( u );
-					} 
-					
-					u = vResultURL[ WebService.ReturnTypes.RESULT_STDERR.ordinal() ];
-					if ( null != u ) 
-					{
-						stderrFileContents = Utilities.getFileContents( u );
-					}
-
-					
-						
-					
-					// *****  process results *****							
-					if ( GONameResultsRowData.size() == 0 && bRunGONotPathwayAnalysis )
-					{
-						statusWindow.append( "No GO results found\n" );
-					}
-					if ( pathwayResultsRowData.size() == 0 && !bRunGONotPathwayAnalysis )
-					{
-						statusWindow.append( "No Pathway results found\n" );
-					}
-					else
-					{
-					}
 					debugWindow.append( "populating tables\n");
 
 					// actionlistener to handle rerunning of analysis from results panel
@@ -1577,17 +1589,15 @@ public class InputDialog extends JDialog implements ActionListener {
 							resultsTable.setDefaultRenderer( Object.class, new CustomTableCellRenderer( vbGORowsToHighlight ) );
 
 							// hide some columns
-							// the indices are adjusted to account for the fact that they shift while deleting is going on
-							//int[] GONameColumnsToHide = {0, 1, 5, 6, 7, 11, 12,
-							//		13};
-							int [] GONameColumnsToHide = {}; //
+							// actual columns = 3-7, 11-12							
+							int [] GONameColumnsToHide = { 3, 4, 5, 6, 7, 11, 12 }; 
 							
+							// remove in reverse order so the indices don't need adjustment
 							for (int j = GONameColumnsToHide.length - 1; j >= 0; j--) 
 							{
 								TableColumn column = resultsTable
-										.getColumnModel().getColumn(
-												GONameColumnsToHide[j]);
-								CyLogger.getLogger().debug( "hiding: " + GONameResultsColumnNames.get( j ) );
+										.getColumnModel().getColumn( GONameColumnsToHide[ j ] );
+								CyLogger.getLogger().debug( "hiding: " + GONameResultsColumnNames.get( GONameColumnsToHide[ j ] ) );
 								resultsTable.removeColumn(column);
 							}
 
@@ -1839,17 +1849,6 @@ public class InputDialog extends JDialog implements ActionListener {
 
 				} // if... end
 				
-			} catch (java.net.MalformedURLException e) {
-				debugWindow.append("error:" + e );
-				statusWindow.append("exception: " + e );
-
-				Utilities.showError(
-						"malformed URL while fetching results: ", e);
-			} catch (java.io.IOException e) {
-				debugWindow.append("error:" + e);
-				statusWindow.append( "exception: " + e );
-				Utilities.showError(
-						"IO exception while fetching results: ", e);
 			} catch( Exception e  )
 			{
 				debugWindow.append( "Exception: " + e + "\n");
