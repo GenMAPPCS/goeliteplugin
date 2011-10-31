@@ -112,8 +112,18 @@ public class CommandHandler extends AbstractCommandHandler {
 			result.addMessage("job id = " + jobId);
 			result.addResult(ARG_ID, jobId);
 		} else if (OPENDIALOG.equals(command)) {
-			InputDialog dialog = new InputDialog();
-			dialog.setVisible(true);
+			try {
+				// pop up dialog
+				InputDialog d = new InputDialog();
+				
+				d.pack();
+				d.setVisible( true );
+
+
+			} catch (Exception e) {
+				Utilities.showError("Could not open main GOElite dialog", e);
+				System.out.println("Exception: " + e);
+			}
 
 			result.addMessage("Opened dialog");
 		} else if (STATUS.equals(command)) {

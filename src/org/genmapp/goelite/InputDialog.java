@@ -1489,7 +1489,7 @@ public class InputDialog extends JDialog implements ActionListener {
 							JFileChooser chooser = (null != browseButtonLastFileSelected
 									? new JFileChooser(browseButtonLastFileSelected)
 									: new JFileChooser());
-							int returnVal = chooser.showOpenDialog( resultsMasterPanel );
+							int returnVal = chooser.showSaveDialog( resultsMasterPanel );
 
 							try
 							{
