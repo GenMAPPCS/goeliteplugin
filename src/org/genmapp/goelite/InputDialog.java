@@ -282,10 +282,9 @@ public class InputDialog extends JDialog implements ActionListener {
 				.getAttributeNames();
 		JLabel criteriaPrimaryIDColumnLabel = new JLabel(
 				"Primary ID Column:");
-		criteriaPrimaryIDColumnComboBox.insertItemAt("ID", 0);
 		for (String n : attributeNames) {
-			if (CyAttributes.TYPE_STRING == nodeAttributes
-					.getType(n)) {
+			if ( CyAttributes.TYPE_STRING == nodeAttributes
+					.getType(n) && nodeAttributes.getUserVisible( n ) ) {
 				criteriaPrimaryIDColumnComboBox.addItem(n);
 			}
 		}
@@ -388,10 +387,10 @@ public class InputDialog extends JDialog implements ActionListener {
         networkSpeciesToAnalyzeComboBox.setSelectedIndex( defaultSpeciesIdx );
 		
         networkPrimaryIDColumnComboBox = new JComboBox();
-		networkPrimaryIDColumnComboBox.insertItemAt("ID", 0);
 		for (String n : attributeNames) {
 			if (CyAttributes.TYPE_STRING == nodeAttributes
-					.getType(n)) {
+					.getType(n) && nodeAttributes.getUserVisible( n ) ) 
+			{
 				networkPrimaryIDColumnComboBox.addItem(n);
 			}
 		}
@@ -1895,24 +1894,13 @@ public class InputDialog extends JDialog implements ActionListener {
 		// look for 
 		CyAttributes nodeAttributes = Cytoscape.getNodeAttributes();
 		
-		// get a node, any node from the current network
-		if ( Cytoscape.getCurrentNetwork().nodesList().size() == 0 ) { return; }
-		
-		
-		Node node = ( Node ) Cytoscape.getCurrentNetwork().nodesList().get( 0 );
-		CyLogger.getLogger().debug( "got node: " + node.getIdentifier() );
-		
+			
 		String sampleID = "";
-		if ( primaryIDCol.equals( "ID" ) )
-		{
-			// "ID" is not technically stored the same way as the other attributes, it is not a 'node attribute' tho
-			//    it is listed in the node attributes spreadsheet
-			sampleID = node.getIdentifier();
-		}
-		else
-		{
-			sampleID = ( String ) nodeAttributes.getAttribute( node.getIdentifier(), primaryIDCol );
-		}
+		Node sampleNode = GOElitePlugin.getSampleNodeWithAttribute( primaryIDCol );
+		if ( null == sampleNode ) { return; }
+		
+		sampleID = ( String ) nodeAttributes.getAttribute( sampleNode.getIdentifier(), primaryIDCol );
+		
 		CyLogger.getLogger().debug( "sampleID: " + sampleID );
 		
 		// Update ID type display

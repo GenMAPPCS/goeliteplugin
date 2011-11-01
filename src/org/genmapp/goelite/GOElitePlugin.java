@@ -213,19 +213,10 @@ public class GOElitePlugin extends CytoscapePlugin {
 		debugWindow.append("done writing input file\n");
 	}
 	
-	// produces a probeset/denominator file that can be sent to the webservice
-	// for GO-Elite analysis
-	// bWriteMode = if false, then does not write the file to disk; useful for
-	// counting number of hits it would write
-	public static long[] generateInputFileFromNetworkCriteria(
-			String pathToFile, String systemCode, String criteriaSetName,
-			String criteriaLabel, boolean bAcceptTrueValuesOnly,
-			boolean bWriteMode, String keyAttribute, JTextArea debugWindow)
-			throws java.io.IOException {
-		FileWriter fw = null;
-		PrintWriter out = null;
-
-		
+	
+	// returns a single node that has the given attribute
+	public static Node getSampleNodeWithAttribute( String attrib )
+	{
 		// for every dataset node,
 		// get all nodes that pass the test
 		// collect node list assembled from all CyDatasets
@@ -242,62 +233,102 @@ public class GOElitePlugin extends CytoscapePlugin {
 			e1.printStackTrace();
 		}
 		int[] dsetNodes = (int[]) re.getResult();
-		
-		String nodeAttributeCriteriaLabel = criteriaSetName + "_"
-				+ criteriaLabel;
+		CyLogger.getLogger().debug( "nodeSet: " + dsetNodes.length );
+
 		int[] nodeList = dsetNodes; //Cytoscape.getRootGraph().getNodeIndicesArray();
 		CyAttributes nodeAttributes = Cytoscape.getNodeAttributes();
-		debugWindow.append("bAcceptTrueValuesOnly: " + bAcceptTrueValuesOnly);
+		
+		for( int i : nodeList  )
+		{
+			Node node = Cytoscape.getRootGraph().getNode(i);
+						
+			if (nodeAttributes.hasAttribute(node.getIdentifier(),
+					attrib )) 
+			{
+				return( node );
+			}
+		}
+		
+		return( null );
+	}
+	public static Object [] getNodeSetWithCriteria( String criteriaSet, 
+			 String criteria, boolean bAcceptTrueValuesOnly )
+	{
+		// for every dataset node,
+		// get all nodes that pass the test
+		// collect node list assembled from all CyDatasets
+		Map<String, Object> args = new HashMap<String, Object>();
+		CyCommandResult re = null;
+		try {
+			 re = CyCommandManager.execute("workspaces", CommandHandler.GET_ALL_DATASET_NODES,
+					 args);
+		} catch (CyCommandException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		} catch (RuntimeException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+		
+		int[] dsetNodes = (int[]) re.getResult();
+		CyLogger.getLogger().debug( "nodeSet: " + dsetNodes.length );
+
+		String nodeAttributeCriteriaLabel = criteriaSet + "_"
+				+ criteria;
+		int[] nodeList = dsetNodes; //Cytoscape.getRootGraph().getNodeIndicesArray();
+		CyAttributes nodeAttributes = Cytoscape.getNodeAttributes();
 		boolean bFirstValue = true;
 		long numHits = 0;
 		long numTotal = 0;
-		debugWindow.append("Checking all nodes: " + nodeList.length + " for "
-				+ nodeAttributeCriteriaLabel + "\n");
-	
+		
 		List< Node > finalNodeList = new java.util.LinkedList< Node >();
-		debugWindow.append("Wassup"+ "\n" );
 		for( int i : nodeList  )
 		{
 			boolean value = false;
-			debugWindow.append("i: " + i + "\n");
 			Node node = Cytoscape.getRootGraph().getNode(i);
-			debugWindow.append("Node: " + node + "\n");
-			debugWindow.append("NodeId: " + node.getIdentifier() + "\n" );
 						
 			if (nodeAttributes.hasAttribute(node.getIdentifier(),
 					nodeAttributeCriteriaLabel)) {
-				debugWindow.append("has criteria\n");
 				numTotal++;
 				Object o = nodeAttributes.getAttribute( node
 						.getIdentifier(), nodeAttributeCriteriaLabel );
-				debugWindow.append(" o = " + o );
-				
-				debugWindow.append(" o class= " + o.getClass() );
 				
 				boolean x = o.toString().equals( "true" );  
-				
-				debugWindow.append("x = " + x );
-				
+								
 				if (!bAcceptTrueValuesOnly
 						|| x ) 
 				{
-					debugWindow.append("yep" + "\n" );
-
 					if (node.getIdentifier().length() > 0) 
 					{
 						numHits++;
-						debugWindow.append( node.getIdentifier() + " added" );
 						finalNodeList.add( node );
 					}
 				}
-				else
-				{
-					debugWindow.append( "nope" );
-				}
 			}
-			
 		}
-		debugWindow.append( "numTotal that passed = " + numTotal );
+		Object [] rs = new Object[ 3 ];
+		rs[ 0 ] = numHits;
+		rs[ 1 ] = numTotal;
+		rs[ 2 ] = finalNodeList;
+		
+		return( rs );
+	 }
+	// produces a probeset/denominator file that can be sent to the webservice
+	// for GO-Elite analysis
+	// bWriteMode = if false, then does not write the file to disk; useful for
+	// counting number of hits it would write
+	public static long[] generateInputFileFromNetworkCriteria(
+			String pathToFile, String systemCode, String criteriaSetName,
+			String criteriaLabel, boolean bAcceptTrueValuesOnly,
+			boolean bWriteMode, String keyAttribute, JTextArea debugWindow)
+			throws java.io.IOException {
+		FileWriter fw = null;
+		PrintWriter out = null;
+
+		Object[] result = getNodeSetWithCriteria( criteriaSetName, criteriaLabel, bAcceptTrueValuesOnly );
+		Long numHits = ( Long ) result[ 0 ];
+		Long numTotal = ( Long ) result[ 1 ];
+		List< Node > finalNodeList = ( List< Node > ) result[ 2 ];
 		generateInputFileFromNodeSet( pathToFile, systemCode, new HashSet< Node >( finalNodeList ), bWriteMode, keyAttribute, debugWindow );
 		
 		long[] nums = { numHits, numTotal };
