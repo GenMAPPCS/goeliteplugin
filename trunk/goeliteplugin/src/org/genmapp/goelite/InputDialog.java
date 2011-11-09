@@ -282,6 +282,8 @@ public class InputDialog extends JDialog implements ActionListener {
 				.getAttributeNames();
 		JLabel criteriaPrimaryIDColumnLabel = new JLabel(
 				"Primary ID Column:");
+        criteriaPrimaryIDColumnComboBox.addItem( "ID" );
+
 		for (String n : attributeNames) {
 			if ( CyAttributes.TYPE_STRING == nodeAttributes
 					.getType(n) && nodeAttributes.getUserVisible( n ) ) {
@@ -352,7 +354,7 @@ public class InputDialog extends JDialog implements ActionListener {
         criteriaInputSelectPanel = new JPanel();
         criteriaInputSelectPanel.setLayout( new BoxLayout( criteriaInputSelectPanel, BoxLayout.Y_AXIS ));
         criteriaInputSelectPanel.setBorder( new TitledBorder( BorderFactory.createEtchedBorder( EtchedBorder.LOWERED ), "Input",
-        		TitledBorder.LEFT, TitledBorder.DEFAULT_POSITION) );
+        		TitledBorder.LEFT, TitledBorder.DEFAULT_POSITION ) );
         
         Box criteriaNumerPanel = Box.createHorizontalBox();
         Box criteriaDenomPanel = Box.createHorizontalBox();
@@ -387,6 +389,7 @@ public class InputDialog extends JDialog implements ActionListener {
         networkSpeciesToAnalyzeComboBox.setSelectedIndex( defaultSpeciesIdx );
 		
         networkPrimaryIDColumnComboBox = new JComboBox();
+        networkPrimaryIDColumnComboBox.addItem( "ID" );
 		for (String n : attributeNames) {
 			if (CyAttributes.TYPE_STRING == nodeAttributes
 					.getType(n) && nodeAttributes.getUserVisible( n ) ) 
@@ -517,12 +520,12 @@ public class InputDialog extends JDialog implements ActionListener {
 				if ( e.getSource() == criteriaPrimaryIDColumnComboBox )
 				{
 					updatePrimaryIDSystemComboBoxes( ( String ) criteriaPrimaryIDColumnComboBox.getSelectedItem(), 
-							criteriaPrimaryIDSystemComboBox );
+							criteriaPrimaryIDSystemComboBox, criteriaPrimaryIDColumnComboBox.getSelectedIndex() == 0  );
 				}
 				else if ( e.getSource() == networkPrimaryIDColumnComboBox )
 				{
 					updatePrimaryIDSystemComboBoxes( ( String ) networkPrimaryIDColumnComboBox.getSelectedItem(), 
-							networkPrimaryIDSystemComboBox );
+							networkPrimaryIDSystemComboBox, networkPrimaryIDColumnComboBox.getSelectedIndex() == 0  );
 				}
 				
 				if (e.getSource() == criteriaInputCriteriaSetComboBox ) 
@@ -583,6 +586,7 @@ public class InputDialog extends JDialog implements ActionListener {
 											false,
 											(String) criteriaPrimaryIDColumnComboBox
 													.getSelectedItem(),
+													0 == criteriaPrimaryIDColumnComboBox.getSelectedIndex(),
 											debugWindow);
 							numHits = nums[0];
 							numTotal = nums[1];
@@ -779,7 +783,9 @@ public class InputDialog extends JDialog implements ActionListener {
 											(String) selectedCriteriaSet, (String) criteria,
 											true, true,
 											(String) criteriaPrimaryIDColumnComboBox
-													.getSelectedItem(), debugWindow);
+													.getSelectedItem(), 
+											0 == criteriaPrimaryIDColumnComboBox.getSelectedIndex(),
+											debugWindow);
 				
 									String denomFileName = criteria + "_denom";
 									String denomFilePath = pluginDir + "/" + denomFileName;
@@ -791,7 +797,9 @@ public class InputDialog extends JDialog implements ActionListener {
 											(String) selectedCriteriaSet, (String) criteria,
 											false, true,
 											(String) criteriaPrimaryIDColumnComboBox
-													.getSelectedItem(), debugWindow);
+													.getSelectedItem(), 
+											0 == criteriaPrimaryIDColumnComboBox.getSelectedIndex(),
+											debugWindow);
 				
 									launchJob(geneListFilePath, denomFilePath);
 								}
@@ -828,7 +836,8 @@ public class InputDialog extends JDialog implements ActionListener {
 								GOElitePlugin.generateInputFileFromNodeSet(
 										geneListFilePath, systemCode,
 										numeratorNodes,
-										true, ( String ) networkPrimaryIDColumnComboBox.getSelectedItem(), debugWindow);
+										true, ( String ) networkPrimaryIDColumnComboBox.getSelectedItem(), 
+										0 == networkPrimaryIDColumnComboBox.getSelectedIndex(), debugWindow);
 								CyLogger.getLogger().debug( "6" );
 								debugWindow.append("file generated for " + geneListFilePath + "\n");
 			
@@ -844,6 +853,7 @@ public class InputDialog extends JDialog implements ActionListener {
 										denomFilePath, systemCode,
 										denomNodes,
 										true, ( String ) networkPrimaryIDColumnComboBox.getSelectedItem(),
+										0 == networkPrimaryIDColumnComboBox.getSelectedIndex(),
 										debugWindow);
 								debugWindow.append("file generated for " + denomFilePath + "\n");
 			
@@ -889,9 +899,9 @@ public class InputDialog extends JDialog implements ActionListener {
 		criteriaPrimaryIDSystemComboBox.setSelectedIndex( systemCodeDefaultIdx );
 		networkPrimaryIDSystemComboBox.setSelectedIndex( systemCodeDefaultIdx );
 		updatePrimaryIDSystemComboBoxes( ( String ) criteriaPrimaryIDColumnComboBox.getSelectedItem(), 
-				criteriaPrimaryIDSystemComboBox );
+				criteriaPrimaryIDSystemComboBox, criteriaPrimaryIDColumnComboBox.getSelectedIndex() == 0  );
 		updatePrimaryIDSystemComboBoxes( ( String ) networkPrimaryIDColumnComboBox.getSelectedItem(), 
-				networkPrimaryIDSystemComboBox );
+				networkPrimaryIDSystemComboBox, networkPrimaryIDColumnComboBox.getSelectedIndex() == 0 );
 		
 		// Add action listeners
 		criteriaInputCriteriaSetComboBox.addActionListener( inputSourceActionListener );
@@ -1869,8 +1879,10 @@ public class InputDialog extends JDialog implements ActionListener {
 		args.put("sourceid", sampleID );
 		
 		try {
+			CyLogger.getLogger().debug( "calling cycommand ipdmapping.guessidtype with args: " + args );
 			CyCommandResult result = CyCommandManager.execute("idmapping", "guess id type", args);
 			 idTypes = (Set<String>) result.getResult();
+			 CyLogger.getLogger().debug("cycommand returned with result: " + idTypes );
 		} catch (CyCommandException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -1886,21 +1898,26 @@ public class InputDialog extends JDialog implements ActionListener {
 		return idTypes;
 	}
 
-	private void updatePrimaryIDSystemComboBoxes( String primaryIDCol, JComboBox comboBox ) 
+	// bUseCytoscapeID - if true, then the primaryIDCol param does not refer to a nodeAttribute
+	//                   but rather the cytoscape ID
+	private void updatePrimaryIDSystemComboBoxes( String primaryIDCol, JComboBox comboBox,
+			boolean bUseCytoscapeID ) 
 	{
 		CyLogger.getLogger().debug( "updatePrimaryIDSystemComboBoxes " + primaryIDCol + " " + comboBox );
 		
-		// look in current network, grab first row of node attributes
-		// look for 
-		CyAttributes nodeAttributes = Cytoscape.getNodeAttributes();
-		
-			
+		CyAttributes nodeAttributes = Cytoscape.getNodeAttributes();		
 		String sampleID = "";
-		Node sampleNode = GOElitePlugin.getSampleNodeWithAttribute( primaryIDCol );
+		Node sampleNode = GOElitePlugin.getSampleNodeWithAttribute( primaryIDCol, bUseCytoscapeID );
 		if ( null == sampleNode ) { return; }
-		
-		sampleID = ( String ) nodeAttributes.getAttribute( sampleNode.getIdentifier(), primaryIDCol );
-		
+	
+		if ( bUseCytoscapeID )
+		{
+		  sampleID = sampleNode.getIdentifier();
+		}
+		else
+		{
+			sampleID = ( String ) nodeAttributes.getAttribute( sampleNode.getIdentifier(), primaryIDCol );
+		}
 		CyLogger.getLogger().debug( "sampleID: " + sampleID );
 		
 		// Update ID type display
