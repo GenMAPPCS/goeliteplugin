@@ -156,6 +156,7 @@ public class InputDialog extends JDialog implements ActionListener {
     	int idx = 0;
 		int defaultSpeciesIdx = 0;
 		ArrayList<String> arrayListSpecies = new ArrayList<String>();
+		ArrayList<String> arrayListSpeciesLatin = new ArrayList<String>();
 		for (String line : lines) {
 			String[] s = line.split("\t");
 		
@@ -172,12 +173,108 @@ public class InputDialog extends JDialog implements ActionListener {
 			}
 		
 			arrayListSpecies.add(twoLetterCode);
+			arrayListSpeciesLatin.add( latinName );
 			idx++;
 		}
 		vSpecies = arrayListSpecies.toArray(vSpecies);
-
+		vSpeciesLatin = arrayListSpeciesLatin.toArray(vSpeciesLatin);
+		
     	CyLogger.getLogger().debug( "addComponentToPane 18" );
 
+    	
+    	
+    	
+		CyLogger.getLogger().debug( "getting supported gene systems for current species" );
+		Set<String> idTypes = new HashSet<String>();
+		Map<String, Object> args = new HashMap<String, Object>();
+		
+		try {
+			CyCommandResult result = CyCommandManager.execute("idmapping", "get source id types", args);
+			 idTypes = (Set<String>) result.getResult();
+			 CyLogger.getLogger().debug("cycommand returned with result: " + idTypes );
+		} catch (CyCommandException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			CyLogger.getLogger().error( "CyCommandException: " + e );
+		} catch (RuntimeException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			CyLogger.getLogger().error( "CyCommandException: " + e );			
+		}
+		ArrayList< String > geneSystems = new ArrayList< String >( idTypes );		
+		
+    	// grab supported gene systems from master list --- this is for all species so the vGeneSystems array
+		//     will link to a subset of this
+    	String geneSystemList = "http://svn.bigcat.unimaas.nl/bridgedb/trunk/org.bridgedb.bio/resources/org/bridgedb/bio/datasources.txt";
+    	lines = null;
+		try 
+		{
+			lines = Utilities.getFileContents(new URL(geneSystemList));
+		} catch (java.net.MalformedURLException e) {
+			Utilities.showError("Malformed URL in species list", e);
+			return;
+		
+		} catch (java.io.IOException e) { 
+			Utilities.showError("Could not retrieve species list from URL", e);
+			return;
+		
+		}
+    	CyLogger.getLogger().debug( "addComponentToPane 19" );
+
+		
+		ArrayList< String > systemCodes = new ArrayList< String >();
+		for ( int i = 0; i < geneSystems.size(); i++ )
+		{
+			systemCodes.add( null );
+		}
+		for (String line : lines) 
+		{
+			String[] s = line.split("\t");
+
+			// format: <gene_system_name>\t<gene_system_id>]\t......\n";
+			for( int i = 0; i < geneSystems.size(); i++ )
+			{
+				if ( geneSystems.get( i ).equals( s[ 0 ] ) )
+				{
+					if ( geneSystems.get( i ).contains( "Ensembl" ) )
+					{
+						CyLogger.getLogger().debug( "geneSystem " + geneSystems.get( i ) + " -> En" );
+						systemCodes.set( i, "En" );
+					}
+					else
+					{
+					  systemCodes.set( i, s[ 1 ] );					
+					}
+				}
+			}
+		}
+		for( int i = 0; i < systemCodes.size(); i++ )
+		{
+			if ( systemCodes.get( i )  == null )
+			{
+				geneSystems.remove( i );
+				systemCodes.remove( i );
+				i--;
+			}
+		}
+		// at this point, you have geneSystems and systemCodes as parallel arraylists, and only
+		//    those geneSystems that have matching systemCodes are allowed to exist
+		
+    	CyLogger.getLogger().debug( "addComponentToPane 20" );
+		
+		
+    	// add two special cases
+		geneSystems.add( "<gene symbol>" );
+		geneSystems.add( "???" );
+		
+		systemCodes.add( "Sy" );
+		systemCodes.add( "--" );
+		
+		vGeneSystems = geneSystems.toArray( vGeneSystems );
+		vGeneSystemCodes = systemCodes.toArray( vGeneSystemCodes );
+    	CyLogger.getLogger().debug( "addComponentToPane 21" );
+
+		
 		String systemCodeInData = Cytoscape.getNetworkAttributes().getStringAttribute( 
 				Cytoscape.getCurrentNetwork().getIdentifier(),	"SystemCode" );
 		int systemCodeDefaultIdx = 0;
@@ -185,14 +282,15 @@ public class InputDialog extends JDialog implements ActionListener {
 		{
 			for( int ii =0; ii < vGeneSystems.length; ii++ )
 			{
-				if ( vGeneSystems[ ii ].equals( systemCodeInData ) )
+				if ( vGeneSystemCodes[ ii ].equals( systemCodeInData ) )
 				{
 					systemCodeDefaultIdx = ii;
 				}
 			}
 		}
 
-    	
+    	CyLogger.getLogger().debug( "addComponentToPane 22" );
+
     	
     	// Top-level button group for switching modes
     	JPanel modeSelectionPanel = new JPanel(); //use FlowLayout
@@ -212,7 +310,7 @@ public class InputDialog extends JDialog implements ActionListener {
         fileCard.setLayout( new BoxLayout( fileCard, BoxLayout.Y_AXIS ) );
 
         // init data-holding components
-        fileSpeciesToAnalyzeComboBox = new JComboBox( vSpecies );
+        fileSpeciesToAnalyzeComboBox = new JComboBox( vSpeciesLatin );
         fileSpeciesToAnalyzeComboBox.setSelectedIndex( defaultSpeciesIdx );
 		
         fileMODIDSystemComboBox = new JComboBox( vMODIDSystems );        
@@ -269,13 +367,13 @@ public class InputDialog extends JDialog implements ActionListener {
         criteriaCard.setLayout( new BoxLayout( criteriaCard, BoxLayout.Y_AXIS ) );
 
         // init data-holding components
-        criteriaSpeciesToAnalyzeComboBox = new JComboBox( vSpecies );
+        criteriaSpeciesToAnalyzeComboBox = new JComboBox( vSpeciesLatin );
         criteriaSpeciesToAnalyzeComboBox.setSelectedIndex( defaultSpeciesIdx );
         criteriaPrimaryIDSystemComboBox = new JComboBox( vGeneSystems );
         criteriaInputCriteriaSetComboBox = new JComboBox();
 		criteriaPrimaryIDColumnComboBox = new JComboBox();
         criteriaInputCriteriaComboBox = new JComboBox();
-        criteriaInputCriteriaComboBox.addItem( criteriaAllStringValue );
+        //criteriaInputCriteriaComboBox.addItem( criteriaAllStringValue );
         
         CyAttributes nodeAttributes = Cytoscape.getNodeAttributes();
 		String[] attributeNames = nodeAttributes
@@ -385,7 +483,7 @@ public class InputDialog extends JDialog implements ActionListener {
         JPanel networkCard = new JPanel();
         networkCard.setLayout( new BoxLayout( networkCard, BoxLayout.Y_AXIS ) );
 
-        networkSpeciesToAnalyzeComboBox = new JComboBox( vSpecies );
+        networkSpeciesToAnalyzeComboBox = new JComboBox( vSpeciesLatin );
         networkSpeciesToAnalyzeComboBox.setSelectedIndex( defaultSpeciesIdx );
 		
         networkPrimaryIDColumnComboBox = new JComboBox();
@@ -415,6 +513,18 @@ public class InputDialog extends JDialog implements ActionListener {
         networkInputNumeratorComboBox = new JComboBox( networkInputNumerators );
         networkInputDenominatorComboBox = new JComboBox( availableNetworks );
 
+        if ( Cytoscape.getCurrentNetwork() != null )
+        {
+        	CyLogger.getLogger().debug( "cytoscape.currentnetwork " + Cytoscape.getCurrentNetwork() + " " + Cytoscape.getCurrentNetwork().getTitle());
+        	for( int j = 0; j < networkInputDenominatorComboBox.getItemCount(); j++ )
+        	{
+        		String x = ( String ) networkInputDenominatorComboBox.getItemAt( j );
+        		if ( x.equals( Cytoscape.getCurrentNetwork().getTitle() ) )
+        		{
+        			networkInputDenominatorComboBox.setSelectedIndex( j );
+        		}
+        	}
+        }
         // params panel
         Box networkSpeciesParamBox = Box.createHorizontalBox();
         networkSpeciesParamBox.add( new JLabel( "Species" ) );
@@ -433,6 +543,7 @@ public class InputDialog extends JDialog implements ActionListener {
     	CyLogger.getLogger().debug( "addComponentToPane 10" );
              
         // input panel
+    	
 		Object selectedNetworkObj = getNetwork(  ( String ) 
 				networkInputDenominatorComboBox.getSelectedItem() );
 		if ( null != selectedNetworkObj )
@@ -540,7 +651,7 @@ public class InputDialog extends JDialog implements ActionListener {
 					
 					// JComboBox removeall() was acting up, so I create a dummy and swap models instead
 					JComboBox dummy = new JComboBox();
-					dummy.addItem( criteriaAllStringValue );
+					//dummy.addItem( criteriaAllStringValue );
 					
 					for ( int i = 0; i < newCriteria.length; i++ )
 					{
@@ -605,20 +716,22 @@ public class InputDialog extends JDialog implements ActionListener {
 				}
 				else if ( e.getSource() == networkInputDenominatorComboBox )
 				{
+					CyLogger.getLogger().debug( "network denom update" );
 					Object selectedNetworkObj = getNetwork(  ( String ) 
 							networkInputDenominatorComboBox.getSelectedItem() );
 							  
 					if ( null != selectedNetworkObj )
 					{
-						networkInputDenominatorLabel = new JLabel( "Denominator: (" + 
+						CyLogger.getLogger().debug( "network denom update: " + ( ( CyNetwork ) selectedNetworkObj ).nodesList().size() + " nodes " );
+						networkInputDenominatorLabel.setText(  "Denominator: (" + 
 								( ( CyNetwork ) selectedNetworkObj ).nodesList().size() + ")" );
-						networkInputNumeratorLabel = new JLabel( "Numerator: (" +
+						networkInputNumeratorLabel.setText( "Numerator: (" +
 								( ( CyNetwork ) selectedNetworkObj ).getSelectedNodes().size() + ")" );
 					}
 					else
 					{
-						networkInputDenominatorLabel = new JLabel( "Denominator: ( 0 )" );
-						networkInputNumeratorLabel = new JLabel( "Numerator: ( 0 )" );
+						networkInputDenominatorLabel.setText( "Denominator: ( 0 )" );
+						networkInputNumeratorLabel.setText( "Numerator: ( 0 )" );
 					}
 				}
 				else if ( e.getSource() == cancelButton )
@@ -701,8 +814,15 @@ public class InputDialog extends JDialog implements ActionListener {
 							return;
 						}
 					}
-			
-					
+					else if ( InputDataType.NETWORK == mode )
+					{
+						// ensure a primary id system is selected
+						if ( null == networkPrimaryIDSystemComboBox.getSelectedItem()  || ( ( String ) networkPrimaryIDSystemComboBox.getSelectedItem() ).equals( "???" ) )
+						{
+							CyLogger.getLogger().error( "Please select a primary ID system" );
+							return;
+						}
+					}
 					
 					// user hit "Run analysis button" 
 					InputDialog.this.dispose();
@@ -757,7 +877,7 @@ public class InputDialog extends JDialog implements ActionListener {
 								String selectedCriteriaSet = (String) criteriaInputCriteriaSetComboBox.getSelectedItem();
 								String selectedCriteria = (String) criteriaInputCriteriaComboBox.getSelectedItem();
 								String[] criteriaList = new String[]{selectedCriteria};
-								String systemCode = ( String ) criteriaPrimaryIDSystemComboBox.getSelectedItem();
+								String systemCode = vGeneSystemCodes[ criteriaPrimaryIDSystemComboBox.getSelectedIndex() ];
 								 
 								if (((String) criteriaInputCriteriaComboBox.getSelectedItem())
 										.compareTo(criteriaAllStringValue) == 0) {
@@ -808,7 +928,7 @@ public class InputDialog extends JDialog implements ActionListener {
 							{
 								debugWindow.append("5\n");
 			
-								String systemCode = ( String ) networkPrimaryIDSystemComboBox.getSelectedItem();
+								String systemCode = vGeneSystemCodes[ networkPrimaryIDSystemComboBox.getSelectedIndex() ];
 			
 								// this is the network the user selected as the denominator
 								String networkTitle = ( String ) networkInputDenominatorComboBox .getSelectedItem();
@@ -1109,29 +1229,34 @@ public class InputDialog extends JDialog implements ActionListener {
 				
 				debugWindow.append( "modid" );
 
-				// parallel arrays: translate the selected id system into the appropritate master-key id system
-				int geneSystemSelectedIndex = -1;
-				// first determine the current system code
 				
-				String geneSystemSelected = "";
-				// XXXX - need to select based on type: FILE must read from disk
+				// To find the MODIDsystem ( the 'universal' system used to translate the primary ID system to 
+				//    other systems, we use Ensembl for everything except for the special cases listed below
+				String modGeneSystemSelected = "Ensembl";
 				if ( mode == InputDataType.NETWORK )
 				{
-					geneSystemSelectedIndex = networkPrimaryIDSystemComboBox.getSelectedIndex();
-					geneSystemSelected = vGeneSystemMODS[ geneSystemSelectedIndex ]; 
+					CyLogger.getLogger().debug( "networkPrimaryIDSystemComboBox: " + ( String ) networkPrimaryIDSystemComboBox.getSelectedItem() );
+					if ( ( ( String ) networkPrimaryIDSystemComboBox.getSelectedItem() ).equals( "Entrez Gene" ) )
+					{
+						CyLogger.getLogger().debug( "EntrezGene" );
+						modGeneSystemSelected = "EntrezGene";
+					}
+					CyLogger.getLogger().debug( "Ensembl" );
 				}
 				else if ( mode == InputDataType.CRITERIA )
 				{
-					geneSystemSelectedIndex = criteriaPrimaryIDSystemComboBox.getSelectedIndex();
-					geneSystemSelected = vGeneSystemMODS[ geneSystemSelectedIndex ];
+					if ( ( ( String ) criteriaPrimaryIDSystemComboBox.getSelectedItem() ).equals( "Entrez Gene" ) )
+					{
+						modGeneSystemSelected = "EntrezGene";
+					}
 				}
 				else if ( mode == InputDataType.FILE )
 				{
-					geneSystemSelected = ( String ) fileMODIDSystemComboBox.getSelectedItem();
+					modGeneSystemSelected = ( String ) fileMODIDSystemComboBox.getSelectedItem();
 				}
 					
 				args.put( WebService.ARG_MOD_ID_SYSTEM,
-						geneSystemSelected );
+						modGeneSystemSelected );
 				
 				debugWindow.append( "numperm" );
 
@@ -1507,6 +1632,11 @@ public class InputDialog extends JDialog implements ActionListener {
 									File exportFile = chooser
 											.getSelectedFile();
 								
+									if ( !exportFile.getName().contains( ".txt" ) )
+									{
+										exportFile = new File( exportFile.getAbsolutePath() + ".txt " );
+									}
+									
 									FileWriter fw = new FileWriter( exportFile );
 									String header = "";
 									for( int i = 0; i < results.getColumnCount(); i++ )
@@ -1765,6 +1895,7 @@ public class InputDialog extends JDialog implements ActionListener {
 					optionsPanel.add( new JLabel( "# Permutations" ) );
 					rerunAnalysisNumPermutations = new JTextField( "0", 3 );
 					rerunAnalysisNumPermutations.setMaximumSize( rerunAnalysisNumPermutations.getPreferredSize() );
+					rerunAnalysisNumPermutations.setMinimumSize( rerunAnalysisNumPermutations.getPreferredSize() );
 					optionsPanel.add( rerunAnalysisNumPermutations );
 					
 					optionsPanel.add( new JLabel( "z-score pruning method:" ) );
@@ -1948,6 +2079,7 @@ public class InputDialog extends JDialog implements ActionListener {
 	}
 	
 	static String[] vSpecies = {};
+	static String[] vSpeciesLatin = {};
 	
 	// Due to the various parallel arrays, we cannot use CyThesaurus to populate the list of gene systems internally
 	//   ( as CyThesaurus only exposes the gene system names, not the equivalent system codes for them, which is
@@ -1971,19 +2103,16 @@ public class InputDialog extends JDialog implements ActionListener {
 	Affy
 	WikiGenes
 	*/
-	static String vGeneSystems[] = {new String("Ensembl Yeast"),
-			new String("Entrez Gene"), new String("SGD"),
-			new String("Tuberculist"), new String("Affy"), new String( "???" ) };
 	
-	// MOD for mapping to GO
-	static String vGeneSystemMODS[] = {new String("Ensembl"),
-			new String("EntrezGene"), new String("Ensembl"),
-			new String("Ensembl"), new String("Ensembl")};
+	// be sure to add "Sy" and "???"
+	static String vGeneSystems[] = {};
+	
 	
 	static String vMODIDSystems[] = {new String( "Ensembl"), new String( "EntrezGene" )};
+	
 	// Code for input files
-	static String vGeneSystemCodes[] = {new String("En"), new String("L"),
-			new String("D"), new String("Tb"), new String("X")};
+	static String vGeneSystemCodes[] = {};
+	
 	static String vPruningAlgorithms[] = {new String("z-score"),
 			new String("\"gene_number\""), new String("combination")};
 	

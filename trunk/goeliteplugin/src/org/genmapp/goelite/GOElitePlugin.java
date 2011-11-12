@@ -325,6 +325,8 @@ public class GOElitePlugin extends CytoscapePlugin {
 		FileWriter fw = null;
 		PrintWriter out = null;
 
+		CyLogger.getLogger().debug( "generateInputFile: systemCode = " + systemCode );
+		
 		Object[] result = getNodeSetWithCriteria( criteriaSetName, criteriaLabel, bAcceptTrueValuesOnly );
 		Long numHits = ( Long ) result[ 0 ];
 		Long numTotal = ( Long ) result[ 1 ];
