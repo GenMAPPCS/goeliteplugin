@@ -96,33 +96,29 @@ public class GOElitePlugin extends CytoscapePlugin {
 	// Cytoscape window
 	CloseableTabbedPane resultsMasterPanel = null;
 
-	public static String[] getCriteriaSets(JTextArea debugWindow) {
+	public static String[] getCriteriaSets() {
 
 		String setsString = CytoscapeInit.getProperties().getProperty(
 				NET_ATTR_SETS);
 
 		String[] a = {""};
 
-		debugWindow.append("getCriteriaSets!" + setsString);
 
 		if (null != setsString && setsString.length() > 2) {
-			debugWindow.append("Criteria Sets found");
 			setsString = setsString.substring(1, setsString.length() - 1);
 			String[] temp = setsString.split("\\]\\[");
 			ArrayList<String> full = new ArrayList<String>();
 			for (String s : temp) {
 				full.add(s);
 			}
-			debugWindow.append("a found " + a.length);
 			return full.toArray(a);
 
 		}
-		debugWindow.append("getCriteriaSets end (" + a.length + ")");
 		return (a);
 	}
 
 	// for a given criteriaSet, return its criteria
-	public static String[] getCriteria(String criteriaSet, JTextArea debugWindow) {
+	public static String[] getCriteria(String criteriaSet) {
 		ArrayList<String> criteriaNames = new ArrayList<String>();
 		String paramString = CytoscapeInit.getProperties().getProperty(
 				NET_ATTR_SET_PREFIX + criteriaSet);
@@ -132,8 +128,6 @@ public class GOElitePlugin extends CytoscapePlugin {
 		// Example: [Node Color][ "18v14 log-fold" > 1.2::Label 1::#ffffff]
 		//   We want to extract "Label 1"
 		String[] temp = paramString.split("\\]\\[");
-		debugWindow.append("criteria for " + criteriaSet + " found "
-				+ temp.length);
 
 		// split first on "comma", then on ":"
 		boolean isFirst = true;
@@ -145,10 +139,8 @@ public class GOElitePlugin extends CytoscapePlugin {
 			}
 
 			String[] tokens = criterion.split(":");
-			debugWindow.append("tokens[2]: " + tokens[2]);
 			criteriaNames.add(tokens[2]);
 		}
-		debugWindow.append("returning ");
 
 		return ((String[]) criteriaNames.toArray(new String[criteriaNames
 				.size()]));
@@ -157,24 +149,19 @@ public class GOElitePlugin extends CytoscapePlugin {
 	public static void generateInputFileFromNodeSet( 
 			String pathToFile, String systemCode, 
 			Set< Node > nodeSet, 
-			boolean bWriteMode, String keyAttribute, boolean bUseCytoscapeID, JTextArea debugWindow)
+			boolean bWriteMode, String keyAttribute, boolean bUseCytoscapeID )
 			throws java.io.IOException 
 	{
 		FileWriter fw = null;
 		PrintWriter out = null;
 
 		if (bWriteMode) {
-			debugWindow.append("opening filewriter: keyAttribute " + keyAttribute + "\n");
 			fw = new FileWriter(pathToFile, false);
-			debugWindow.append("filewriter opened\n");
 			out = new PrintWriter(fw);
-			debugWindow.append("2\n");
 
 			out.write( keyAttribute );
 			out.write("\tsystemCode");
-			debugWindow.append("3\n");
 			out.println();
-			debugWindow.append("4\n");
 		}
 		
 		boolean bFirstValue = true;
@@ -200,7 +187,6 @@ public class GOElitePlugin extends CytoscapePlugin {
 						key = nodeAttributes.getStringAttribute( node.getIdentifier(), keyAttribute );
 					}
 							
-					debugWindow.append( ">" + key + "\t" + systemCode + "\n" );
 					out.write( key + "\t" + systemCode);
 				}
 				bFirstValue = false;
@@ -210,7 +196,6 @@ public class GOElitePlugin extends CytoscapePlugin {
 			out.close();
 			fw.close();
 		}
-		debugWindow.append("done writing input file\n");
 	}
 	
 	
@@ -320,7 +305,7 @@ public class GOElitePlugin extends CytoscapePlugin {
 	public static long[] generateInputFileFromNetworkCriteria(
 			String pathToFile, String systemCode, String criteriaSetName,
 			String criteriaLabel, boolean bAcceptTrueValuesOnly,
-			boolean bWriteMode, String keyAttribute, boolean bUseCytoscapeID, JTextArea debugWindow)
+			boolean bWriteMode, String keyAttribute, boolean bUseCytoscapeID )
 			throws java.io.IOException {
 		FileWriter fw = null;
 		PrintWriter out = null;
@@ -331,10 +316,9 @@ public class GOElitePlugin extends CytoscapePlugin {
 		Long numHits = ( Long ) result[ 0 ];
 		Long numTotal = ( Long ) result[ 1 ];
 		List< Node > finalNodeList = ( List< Node > ) result[ 2 ];
-		generateInputFileFromNodeSet( pathToFile, systemCode, new HashSet< Node >( finalNodeList ), bWriteMode, keyAttribute, bUseCytoscapeID, debugWindow );
+		generateInputFileFromNodeSet( pathToFile, systemCode, new HashSet< Node >( finalNodeList ), bWriteMode, keyAttribute, bUseCytoscapeID );
 		
 		long[] nums = { numHits, numTotal };
-		debugWindow.append( "numHits " + numHits + " numTotal " + numTotal );
 		return( nums );
 	}
 	
