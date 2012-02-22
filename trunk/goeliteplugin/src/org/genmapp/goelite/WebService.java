@@ -61,7 +61,7 @@ class WebService {
 	static String APP_SERVICE_URL = "http://webservices.cgl.ucsf.edu/opal/services/GOEliteService";
 	static String OUTPUT_HEAD_URL = "http://webservices.rbvi.ucsf.edu:8080/";
 
-	public static AppServicePortType getService()
+	public synchronized static AppServicePortType getService()
 			throws javax.xml.rpc.ServiceException {
 		AppServiceLocator findService = new AppServiceLocator();
 		findService
@@ -73,16 +73,15 @@ class WebService {
 
 	// service can be set to null; this will cause a new service to be located
 	// and returned ( slow )
-	public static String launchJob(Map<String, String> args,
+	public synchronized static String launchJob(Map<String, String> args,
 			AppServicePortType service) {
 		return (launchJob(args, service, null));
 	}
 
-	public static String launchJob(Map<String, String> args,
-			AppServicePortType service, JTextArea statusWindow) {
-		statusWindow.append("Parameters:\n");
+	public synchronized static String launchJob(Map<String, String> args,
+			AppServicePortType service, JTextArea statusWindow ) 
+	{
 		try {
-			statusWindow.append("1:\n");
 			if (service == null) {
 				service = getService();
 			}
@@ -164,12 +163,16 @@ class WebService {
 			statusWindow.append( "Could not convert input data files to webservice-compatible format: " + e.getMessage() );
 			
 			return( null );
+		} catch ( Exception e ) {
+			statusWindow.append( "General exception in WebService.getResults() " + e);
+			
+			return( null );
 		}
 	}
 
 	// service can be set to null; this will cause a new service to be located
 	// and returned ( slow )
-	public static StatusOutputType getStatus(String jobID,
+	public static synchronized StatusOutputType getStatus(String jobID,
 			AppServicePortType service) {
 		try {
 			if (service == null) {
@@ -204,8 +207,8 @@ class WebService {
 	// the numeratorFilePrefix is needed to reconstruct the names of the CompleteResults/ORA/ output
 	//   files on the server.  We could also grab the HTML for the directory and parse this to get those
 	//   output filenames.
-	public static URL[] getResults(String jobID, String numeratorFilePrefix,
-			AppServicePortType service, JTextArea statusWindow) {
+	public synchronized static URL[] getResults(String jobID, String numeratorFilePrefix,
+			AppServicePortType service, JTextArea statusWindow ) {
 		try {
 			numeratorFilePrefix = java.net.URLEncoder.encode( numeratorFilePrefix, "UTF-8" ).replace("+", "%20" );
 			URL[] vResultURL = new URL[ ReturnTypes.values().length ];
