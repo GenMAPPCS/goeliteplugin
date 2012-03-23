@@ -65,7 +65,8 @@ class InputDialogWorker extends SwingWorker<StatusOutputType, Void>
 	JTextArea statusWindow = null, stdoutWindow = null,
 	stderrWindow = null;
 	AppServicePortType service = null;
-	String jobID = null;
+	String jobID = "";
+	String jobURLString = "";
 	JTable resultsTable = null; 
 	Vector<String> logFileContents = new Vector<String>();
 	Vector<String> stdoutFileContents = new Vector<String>();
@@ -226,6 +227,8 @@ class InputDialogWorker extends SwingWorker<StatusOutputType, Void>
 				String serverUrl = WebService.OUTPUT_HEAD_URL;
 				statusWindow.append("Link to webservice job:\n "
 						+ serverUrl + jobID + "\n\n");
+				jobURLString = serverUrl + jobID;
+				
 				//CyLogger.getLogger().debug( geneListFilePath + " doInBkgd() about to start loop ");
 
 				// 8 is the code for completion
@@ -732,7 +735,7 @@ class InputDialogWorker extends SwingWorker<StatusOutputType, Void>
 				JPanel optionsPanel = new JPanel();
 				optionsPanel.setLayout( new BoxLayout( optionsPanel, BoxLayout.X_AXIS ));
 				optionsPanel.add( new JLabel( "# Permutations" ) );
-				rerunAnalysisNumPermutations = new JTextField( "0", 3 );
+				rerunAnalysisNumPermutations = new JTextField( "2000", 3 );
 				rerunAnalysisNumPermutations.setMaximumSize( rerunAnalysisNumPermutations.getPreferredSize() );
 				rerunAnalysisNumPermutations.setMinimumSize( rerunAnalysisNumPermutations.getPreferredSize() );
 				optionsPanel.add( rerunAnalysisNumPermutations );
@@ -769,6 +772,18 @@ class InputDialogWorker extends SwingWorker<StatusOutputType, Void>
 				exportButton.addActionListener( exportResultsActionListener );
 				optionsPanel.add( exportButton );
 
+				JButton fullResultsButton = new JButton( "Full Results" );
+				fullResultsButton.addActionListener( new ActionListener() {
+					public void actionPerformed( ActionEvent e ) {
+						cytoscape.util.OpenBrowser.openURL( jobURLString );
+					}
+				} );
+				if ( jobID.length() == 0 )
+				{
+					fullResultsButton.setEnabled( false );
+				}
+				optionsPanel.add( fullResultsButton );
+				
 				resultsWrapperPanel.add( optionsPanel );
 				resultsAnalysisTypePanel.addTab("Results", resultsWrapperPanel );
 
