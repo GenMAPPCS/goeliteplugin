@@ -373,7 +373,7 @@ public class InputDialog extends JDialog implements ActionListener {
         criteriaInputCriteriaSetComboBox = new JComboBox();
 		criteriaPrimaryIDColumnComboBox = new JComboBox();
         criteriaInputCriteriaComboBox = new JComboBox();
-        //criteriaInputCriteriaComboBox.addItem( criteriaAllStringValue );
+        criteriaInputCriteriaComboBox.addItem( criteriaAllStringValue );
         
         CyAttributes nodeAttributes = Cytoscape.getNodeAttributes();
 		String[] attributeNames = nodeAttributes
@@ -430,10 +430,7 @@ public class InputDialog extends JDialog implements ActionListener {
         criteriaParamsBox.setBorder( new TitledBorder( BorderFactory.createEtchedBorder( EtchedBorder.LOWERED ), "Params",
         		TitledBorder.LEFT, TitledBorder.DEFAULT_POSITION) );
         
-/*        Box criteriaSpeciesParamBox = Box.createHorizontalBox();
-        criteriaSpeciesParamBox.add( new JLabel( "Species" ) );
-        criteriaSpeciesParamBox.add( criteriaSpeciesToAnalyzeComboBox );
-  */      
+
         Box criteriaPrimaryIDParamBox = Box.createHorizontalBox();
         criteriaPrimaryIDParamBox.add( new JLabel( "Primary ID Column" ) );
         criteriaPrimaryIDParamBox.add( Box.createHorizontalGlue() );        
@@ -464,7 +461,7 @@ public class InputDialog extends JDialog implements ActionListener {
         criteriaNumerPanel.add( Box.createHorizontalGlue() );        
         criteriaNumerPanel.add( criteriaInputCriteriaSetComboBox );
     
-        criteriaDenomFileDescriptor = new JLabel( "Criteria ( 0 / 0 )" ) ;
+        criteriaDenomFileDescriptor = new JLabel( "Criteria: ( - / - )" ) ;
         criteriaDenomPanel.add(  criteriaDenomFileDescriptor );
         criteriaDenomPanel.add( Box.createHorizontalGlue() );        
         criteriaDenomPanel.add( criteriaInputCriteriaComboBox );
@@ -647,7 +644,7 @@ public class InputDialog extends JDialog implements ActionListener {
 					
 					// JComboBox removeall() was acting up, so I create a dummy and swap models instead
 					JComboBox dummy = new JComboBox();
-					//dummy.addItem( criteriaAllStringValue );
+					dummy.addItem( criteriaAllStringValue );
 					
 					for ( int i = 0; i < newCriteria.length; i++ )
 					{
@@ -659,6 +656,7 @@ public class InputDialog extends JDialog implements ActionListener {
 				if (e.getSource() == criteriaInputCriteriaSetComboBox
 						|| e.getSource() == criteriaInputCriteriaComboBox) 
 				{
+					CyLogger.getLogger().debug( "criteria section");
 					try 
 					{
 						// update the denominator label to count up number of
@@ -672,9 +670,10 @@ public class InputDialog extends JDialog implements ActionListener {
 						long numTotal = 0;
 						if (((String) selectedCriteria)
 								.equals(criteriaAllStringValue)) {
-							criteriaDenomFileDescriptor.setText("Criteria: ( - )");
+							criteriaDenomFileDescriptor.setText("Criteria: ( - / - )");
 	
 						} else {
+							CyLogger.getLogger().debug( "criteria section 2");
 							
 							long[] nums = GOElitePlugin
 									.generateInputFileFromNetworkCriteria(
@@ -691,6 +690,7 @@ public class InputDialog extends JDialog implements ActionListener {
 											);
 							numHits = nums[0];
 							numTotal = nums[1];
+							CyLogger.getLogger().debug( "numHits " + numHits + " numTotal " + numTotal );
 							criteriaDenomFileDescriptor.setText("Criteria: ("
 									+ numHits + "/" + numTotal + ") ");
 						}
