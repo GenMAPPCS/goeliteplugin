@@ -53,6 +53,28 @@ import edu.sdsc.nbcr.opal.AppServicePortType;
 import edu.sdsc.nbcr.opal.types.JobInputType;
 import edu.sdsc.nbcr.opal.types.StatusOutputType;
 
+
+/*  This class does the actual heavy-lifting of the InputDialog interface.  Specifically,
+ *     it converts the user inputs into something usable by the webservice, calls the webservice
+ *     and waits for results, all the while giving status updates to the cytoscape Results Panel.  
+ *     Upon completion, a custom results table is displayed per job.
+ *     
+ *  This class extends SwingWorker to allow for multiple simultaneous jobs to run.  Though
+ *     SwingWorker's "doInBackground" ( which runs as a separate thread ) and "done" ( which runs in the main thread )
+ *     paradigm is handy, you still need to worry
+ *     about multithreading issues.  In particular, within the "doInBackground" method, all
+ *     the methods that access shared resources must either be thread-safe or blocked off with
+ *     "synchronize" to prevent concurrent access.  Hence the WebService.java public functions
+ *     are designated "synchronize" for this reason.   Some other shared resources to worry about include
+ *     user interface elements, class variables ( not local to doInBackground() ) and even the CyLogger ( which is not thread-safe ).  I think
+ *     most of symptomatic code has been resolved but haven't delved deep enough to guarantee complete thread-safety.
+ *     
+ *     One partial solution to using CyLogger within doInBackground() is to create a proxy class SynchronizedCyLogger that simply
+ *     forwards requests to CyLogger, but has all its member functions labelled synchronized.
+ *     We'd have to convert the whole plugin to use this though because stuff running outside
+ *     the critical section could still interfere;  actually, stuff outside our plugin could
+ *     interfere as well.  So, better to simply avoid using CyLogger inside the critical section. 
+ */
 class InputDialogWorker extends SwingWorker<StatusOutputType, Void>
 {
 	String geneListFilePath = "";
@@ -123,6 +145,7 @@ class InputDialogWorker extends SwingWorker<StatusOutputType, Void>
 		CyLogger.getLogger().debug( geneListFilePath + " constructor done ");
 
 	}
+	
 
 	// this stuff in here will run in a separate thread:  beware thread-safety issues!
 	// Note: e.g., CyLogger doesn't appear to be thread-safe, hence the commenting out
@@ -133,18 +156,16 @@ class InputDialogWorker extends SwingWorker<StatusOutputType, Void>
 
 				JobInputType launchJobInput = new JobInputType();
 
-				//CyLogger.getLogger().debug( geneListFilePath + " doInBkgd() start ");
-
 				JPanel statusPanel = new JPanel();
 
 				statusPanel.setLayout(new BoxLayout(statusPanel,
 						BoxLayout.PAGE_AXIS));
 
-				statusWindow = new JTextArea("", 15, 80);
+				statusWindow = new JTextArea("", 60, 80);
 				JScrollPane statusScroll = new JScrollPane(statusWindow);
 				statusPanel.add(statusScroll);
+				statusPanel.setMinimumSize( new Dimension( 300, 0 ) );
 
-				//CyLogger.getLogger().debug( geneListFilePath + " doInBkgd() 1 ");
 				resultsAnalysisTypePanel.addTab("Status", statusPanel);
 
 				Runnable setSelectedComponentForResultsMasterPanel =  
@@ -158,8 +179,6 @@ class InputDialogWorker extends SwingWorker<StatusOutputType, Void>
 
 				resultsAnalysisTypePanel.setSelectedComponent( statusPanel );
 
-				//CyLogger.getLogger().debug( geneListFilePath + " doInBkgd() 2 ");
-
 				int numTries = 0;
 				while( service == null )
 				{
@@ -169,18 +188,21 @@ class InputDialogWorker extends SwingWorker<StatusOutputType, Void>
 					}
 					catch( Exception e )
 					{
-						CyLogger.getLogger().debug( geneListFilePath + " Exception caught and handled: " + e );
+						statusWindow.append( geneListFilePath + " Exception caught and handled: " + e + "\n" );
 						numTries++;
 						if ( numTries > 5 )
 						{
-							CyLogger.getLogger().error( geneListFilePath + " couldn't find service after 5 tries, exiting " );
+							statusWindow.append( geneListFilePath + " couldn't find service after 5 tries, exiting\n" );
 							return null;
 						}
 					}
 				}
-				//CyLogger.getLogger().debug( geneListFilePath + " doInBkgd() 3 " + service );
 
-				if ( null == service ) { CyLogger.getLogger().error( "Couldn't get service object from WebService" ); }
+				if ( null == service ) 
+				{ 
+					statusWindow.append( "Couldn't get service object from WebService\n" ); 
+					return null;
+				}
 
 				Map<String, String> args = new HashMap<String, String>();
 
@@ -190,14 +212,10 @@ class InputDialogWorker extends SwingWorker<StatusOutputType, Void>
 				args.put(WebService.ARG_SPECIES, species);
 
 
-				//CyLogger.getLogger().debug( geneListFilePath + " doInBkgd() 4 ");
-
 				// To find the MODIDsystem ( the 'universal' system used to translate the primary ID system to 
 				//    other systems, we use Ensembl for everything except for the special cases listed below
 
-				//CyLogger.getLogger().debug( geneListFilePath + " doInBkgd() 5 ");
-
-				args.put( WebService.ARG_MOD_ID_SYSTEM,
+	    		args.put( WebService.ARG_MOD_ID_SYSTEM,
 						inputDialog.getSelectedModGeneSystem() );
 
 
@@ -211,8 +229,6 @@ class InputDialogWorker extends SwingWorker<StatusOutputType, Void>
 								defaultZScorePruningMethod :
 									overrideZScorePruningMethod );
 
-				//CyLogger.getLogger().debug( geneListFilePath + " doInBkgd() 6 ");
-
 				args.put(WebService.ARG_ANALYSIS_TYPE,
 						( bRunGONotPathwayAnalysis ? "GeneOntology" : "Pathways" ) );
 				args.put(WebService.ARG_PVAL_THRESH, "" + defaultPValueThresh );
@@ -221,15 +237,17 @@ class InputDialogWorker extends SwingWorker<StatusOutputType, Void>
 				args.put(WebService.ARG_GENELIST_FILE, geneListFilePath);
 				args.put(WebService.ARG_DENOM_FILE, denomFilePath);
 
-				//CyLogger.getLogger().debug( geneListFilePath + " doInBkgd() launching job ");
 				jobID = WebService.launchJob(args, service, statusWindow);
-				CyLogger.getLogger().debug( geneListFilePath + " doInBkgd() job launched ");
+				if ( null == jobID )
+				{
+					statusWindow.append( "GOElite webservice returned a null jobId: try again\n" );
+					return null;
+				}
 				String serverUrl = WebService.OUTPUT_HEAD_URL;
 				statusWindow.append("Link to webservice job:\n "
 						+ serverUrl + jobID + "\n\n");
 				jobURLString = serverUrl + jobID;
 				
-				//CyLogger.getLogger().debug( geneListFilePath + " doInBkgd() about to start loop ");
 
 				// 8 is the code for completion
 				statusWindow.append("Status:\n");
@@ -254,9 +272,6 @@ class InputDialogWorker extends SwingWorker<StatusOutputType, Void>
 								.getDocument().getLength());
 
 				}
-
-				//CyLogger.getLogger().debug( geneListFilePath + " doInBkgd() getting results ");
-
 				String geneListFilePrefix = "";
 				Pattern p = Pattern.compile( "(.+(\\\\|/))*(.+)\\.txt" );
 				Matcher m = p.matcher( geneListFilePath );
@@ -267,18 +282,15 @@ class InputDialogWorker extends SwingWorker<StatusOutputType, Void>
 				else
 				{
 					// throw error
-					CyLogger.getLogger().error( "gene list file must end in .txt" );
+					statusWindow.append( "gene list file must end in .txt\n" );
 					return( null );
 				}
 
-				//CyLogger.getLogger().debug( geneListFilePath + " doInBkgd() getting results" );
 				URL[] vResultURL = WebService.getResults(jobID, geneListFilePrefix,
 						service, statusWindow );
-				//CyLogger.getLogger().debug( geneListFilePath + " doInBkgd() got results" );
 
 				// ******  grab results off server and put into simple data structures *****
 				// process each output file that's sitting on server
-				//synchronized( InputDialog.class )
 				
 					InputStream is = null;
 					DataInputStream dis;
@@ -323,13 +335,12 @@ class InputDialogWorker extends SwingWorker<StatusOutputType, Void>
 								if ( match.matches() )
 								{
 									String GOID = match.group( 1 );
-									CyLogger.getLogger().debug( "highlight: " + GOID );
-	
+							
 									GOIDsToHighlight.put( GOID, Boolean.TRUE );
 								}
 								else
 								{
-									CyLogger.getLogger().error( "Couldn't parse: " + GONameAndID + " for line " + line );
+									statusWindow.append( "Couldn't parse: " + GONameAndID + " for line " + line + "\n" );
 								}
 							} 
 							else 
@@ -340,7 +351,6 @@ class InputDialogWorker extends SwingWorker<StatusOutputType, Void>
 								String[] pathwayNameAndID = rowData[ 2 ].split( ":" );
 								String pathwayID = pathwayNameAndID[ 1 ];
 								pathwayIDsToHighlight.put( pathwayID, Boolean.TRUE );
-					//			CyLogger.getLogger().debug( "highlight pathway: " + pathwayID );
 							}
 						}
 					} 
@@ -391,7 +401,6 @@ class InputDialogWorker extends SwingWorker<StatusOutputType, Void>
 									.asList(rowData)));
 	
 						}
-						//CyLogger.getLogger().debug( "GORowsToHighlight " + GORowsToHighlight );
 					}
 	
 					u = vResultURL[ WebService.ReturnTypes.RESULT_FULL_PATHWAY.ordinal() ];
@@ -426,12 +435,10 @@ class InputDialogWorker extends SwingWorker<StatusOutputType, Void>
 							// Pathway ID is buried in the MAPPName   ( text name ):( id )
 							// Triacylglyceride Synthesis:WP386
 	
-							//CyLogger.getLogger().debug( "rowdata[0] " + rowData[0] );
 	
 							String[] pathwayTextNameAndID = rowData[ 0 ].split( ":" );
 							String pathwayID = pathwayTextNameAndID[1];
-							//CyLogger.getLogger().debug( "pathwayTextNameAndID " + pathwayID);
-	
+							
 							if ( pathwayIDsToHighlight.containsKey( pathwayID ) && 
 									( Boolean.TRUE == pathwayIDsToHighlight.get( pathwayID ) ) )
 							{
@@ -448,7 +455,6 @@ class InputDialogWorker extends SwingWorker<StatusOutputType, Void>
 									.asList(rowData)));
 	
 						}
-						//CyLogger.getLogger().debug( "pathwayRowsToHighlight " + pathwayRowsToHighlight );
 					}
 	
 					u = vResultURL[ WebService.ReturnTypes.RESULT_LOG.ordinal() ];
@@ -475,15 +481,15 @@ class InputDialogWorker extends SwingWorker<StatusOutputType, Void>
 					// *****  process results *****							
 					if ( GONameResultsRowData.size() == 0 && bRunGONotPathwayAnalysis )
 					{
-					//	CyLogger.getLogger().debug( geneListFilePath + " No GO results found\n" );
+						statusWindow.append( geneListFilePath + " No GO results found\n" );
 					}
 					if ( pathwayResultsRowData.size() == 0 && !bRunGONotPathwayAnalysis )
 					{
-					//	CyLogger.getLogger().debug( geneListFilePath + "No Pathway results found\n" );
+						statusWindow.append( geneListFilePath + "No Pathway results found\n" );
 					}
 					else
 					{
-					//	CyLogger.getLogger().debug( geneListFilePath + " Results were found" );
+						statusWindow.append( geneListFilePath + " Results were found\n" );
 					}			
 
 				
@@ -494,13 +500,13 @@ class InputDialogWorker extends SwingWorker<StatusOutputType, Void>
 						"malformed URL while fetching results: ", e);
 			} catch (java.lang.InterruptedException e) {
 				// Thread.sleep() was interrupted, ignore
-				CyLogger.getLogger().error( "InterruptedException: " + e );
+				statusWindow.append( "InterruptedException: " + e );
 			} catch( IOException e )
 			{
-				CyLogger.getLogger().error( "IOException: " + e );
+				statusWindow.append( "IOException: " + e );
 			} catch( Exception e )
 			{
-				CyLogger.getLogger().error( geneListFilePath + " Exception: " + e + stack2string( e ) );
+				statusWindow.append( geneListFilePath + " Exception: " + e + stack2string( e ) );
 			}
 
 

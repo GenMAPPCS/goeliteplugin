@@ -96,6 +96,18 @@ import giny.model.Node;
 
 import java.util.ArrayList;
 
+/* This is the actual JDialog subclass that presents the main user interface.  We use
+ *   CardLayout because of the three distinct views that need to be instantly switchable
+ *   ( CardLayout seems tailor-made for this )
+ *   
+ *   The design is to have most of the UI stuff here, but the heavy lifting is actually
+ *      done by InputDialogWorker.   The Worker thread, which is (mostly) thread-safe, allows for 
+ *      multiple GOElite tasks to work at the same time ( though there may still be some intermittent issues ).
+ *         
+ *   The code here mostly deals with window-dressing/UI except for the method launchJob()
+ *      which creates InputDialogWorkers and executes them simultaneously.
+ */
+
 /**
  * In terms of design, layoutProperites is created in the GOElitePlugin and
  * passed into this class so that the GOEliteCommandListener can tap into the
@@ -754,8 +766,7 @@ public class InputDialog extends JDialog implements ActionListener {
 									fileNumerFilename.setText(filePath);
 									fileNumerFileDescriptor
 											.setText("Numerator: ("
-													+ Utilities
-															.countLinesInFile(filePath)
+													+ ( Utilities.countLinesInFile(filePath) - 1 )
 													+ ")");									
 
 								}
@@ -768,8 +779,7 @@ public class InputDialog extends JDialog implements ActionListener {
 									fileDenomFilename.setText(filePath);
 									fileDenomFileDescriptor
 											.setText("Denominator: ("
-													+ Utilities
-															.countLinesInFile(filePath)
+													+ ( Utilities.countLinesInFile(filePath) - 1 )
 													+ ")");
 								}
 							}
@@ -813,7 +823,7 @@ public class InputDialog extends JDialog implements ActionListener {
 					}
 					
 					// user hit "Run analysis button" 
-					//InputDialog.this.dispose();
+					InputDialog.this.dispose();
 							
 					String pluginDir = null;
 					try 
@@ -1314,7 +1324,7 @@ public class InputDialog extends JDialog implements ActionListener {
 			cytoPanel.add("GO-Elite Results", resultsMasterPanel);
 			bResultsMasterPanelAlreadyAdded = true;
 		}
-
+		resultsMasterPanel.setMinimumSize( new Dimension( 400, 0 ) ) ;
 		if ( cytoPanel.getState().equals(CytoPanelState.HIDE ))
 		{
 			cytoPanel.setState(CytoPanelState.DOCK);

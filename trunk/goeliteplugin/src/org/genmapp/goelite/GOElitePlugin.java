@@ -74,16 +74,15 @@ import cytoscape.plugin.CytoscapePlugin;
  * The basic use case is quite linear for this plugin:
  * - user clicks on "Plugins->RUN Go-Elite" 
  * - dialog box pops up with a bunch of input parameters
- * - user fills it out
+ * - user fills it out ( one of three modes: "criteria" | "File" | "network" )
  * - OPAL webservice computes a result based on the user input
  * - results are shown in the Results Panel of the cytoscape application
  * : the dialog disappears immediately after the user hits "submit"
  * : while processing occurs, the results tab gives some indicator of the current progress
  * : when complete, separate results tabs are populated with the results if the run was successful + the log file is printed to the status window
  * 
- * Another way to trigger its functionality is to use CriteriaMapper to select criteria.
- * 
- * A third way is to use CyCommands.
+ *  Some of the functionality of the plugin is also reachable via CyCommands, but that work
+ *     is still incomplete.
  *  
  *
  */
